@@ -39,7 +39,7 @@ ID_START_ARC = wx.NewId()
 ID_STOP_ARC = wx.NewId()
 ID_SER_CONF = wx.NewId()
 
-VERSION = "V1.22 June 2018"
+VERSION = "V1.23 Aug 23 2018"
 TITLE = "ScanMar_Logger2"
 
 
