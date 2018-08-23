@@ -306,11 +306,8 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         'DVTLAM_D': "", #BIO
     }
     def process_sm2(self,y,disp_text,Raw_String,JDict):
-        if (y.sensor == 'DVTLAM' or y.sensor == 'CVTLAM') and y.measurement_id == '':  # issue with CVTLAM having no id value in test data
-            y.measurement_id = 'S'
-        elif  y.sensor == "DP" :  # DP does not have an id field ; also map it to the DPTM sensors field
-            y.sensor = "DPTM"
-            y.measurement_id = "D"
+
+#        print (y.sensor,y.sensor_id,y.measurement_id)
 
         Sensor_Element = y.sensor +  '_' + y.measurement_id
 
@@ -439,6 +436,7 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         'WST': process_wst
        }
 
+# called from scanmarlogger2
     def dispatch_message(self,sentence_type, line_x ,disp_text,Raw_String,JDict):
             if sentence_type in self.GroupDict:
 
@@ -455,12 +453,26 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
                 print ("missing key, not in GroupDict=", sentence_type)
 #                current['OK'] = False
 
-
+# called from scanmar serial tools
     def process_message_new(self, msg):
         self.current = dict()
         if isinstance(msg, SCM):
             if msg.sentence_type in self.GroupDict:
                 if msg.sentence_type == "SM2":
+
+                    if (msg.sensor == 'DVTLAM' or msg.sensor == 'CVTLAM') and msg.measurement_id == '':  # issue with CVTLAM having no id value in test data
+                        msg.measurement_id = 'S'
+                    elif msg.sensor == "DP":  # DP does not have an id field ; also map it to the DPTM sensors field
+                        msg.sensor = "DPTM"
+                        msg.measurement_id = "D"
+                    elif msg.sensor == "DST":  # DST legacy on chan 3(wing) or 4(door) does not have an id field; map to cvtlam dvtlam
+                        if msg.sensor_id == '3':
+                            msg.sensor = "CVTLAM"
+                        elif msg.sensor_id == '4':
+                            msg.sensor = "DVTLAM"
+                        msg.measurement_id = 'S'
+
+
                     m = msg.sensor  + '_' + msg.measurement_id
 #                    m = msg.sensor + '_' + msg.sensor_id + '_' + msg.measurement_id
                     self.current[msg.sentence_type] = msg  # DVTLAS
