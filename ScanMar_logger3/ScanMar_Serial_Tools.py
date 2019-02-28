@@ -7,7 +7,7 @@ try:
 except:
     import Queue as queue
 import io
-import ScanMar_Nmea as SMN
+import ScanMar_Nmea3 as SMN
 import pynmea2
 from collections import OrderedDict
 

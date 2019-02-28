@@ -73,6 +73,19 @@ class RollingDialBox(wx.Panel):
 
         self.SetSizer(sizer)
         sizer.Fit(self)
+
+        def update_values(self,value,interp):
+            for i in range(4,0,-1):
+                self.Data_text.SetValue(self.Data_text.GetValue())
+                self.Data_text.SetForegroundColour(self.Data_text.GetForegroundColour())
+            self.Data_text.SetValue(value)
+            if interp == "A" :   # else a V for interpolated or eched
+                self.Data_text.SetForegroundColour(wx.RED)
+            else:
+                self.Data_text.SetForegroundColour(wx.BLACK)
+
+
+
 # #######################################################################
 class RollingDialBox_multi(wx.Panel):
         """ Displays the realtime data values, even when graph is paused. size = 50 for most
@@ -101,7 +114,7 @@ class RollingDialBox_multi(wx.Panel):
                 self.Data_text[x].SetMaxLength(40)
                 self.Data_text[x].SetFont(wx.Font(afontsize, 74, 90, 92, False, "Arial"))
 #                self.Data_text[x].SetFont(logfont)
-                self.Data_text[x].SetValue(self.DTT[x])
+#                self.Data_text[x].SetValue(self.DTT[x])
                 self.Data_text[x].SetForegroundColour(color)
                 self.Data_text[x].SetBackgroundColour("#f9f9f9")
                 sizer.Add(self.Data_text[x], 0, wx.ALL, bordersize)

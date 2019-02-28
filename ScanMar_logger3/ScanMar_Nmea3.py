@@ -346,6 +346,10 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         JDict[Sensor_Element] = str(x.lon[1:3] + ' '+ '{:>6.6}'.format(x.lon[3:]) + x.lon_dir)
         Raw_String["GLL"] = x
 
+        Sensor_Element = "GLL_TS"
+        disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
+
+        JDict["GPS_TIME"] = str(x.timestamp)
 
         JDict["Lat"]= '{:>7.6}'.format(x.latitude)
         JDict["Long"] = '{:>7.6}'.format(x.longitude)
@@ -374,7 +378,7 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         Raw_String["ZDA"] = x
         Sensor_Element = "ZDA_TS"
         disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
-        JDict["DATETIME"] = str(x.year).zfill(2) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(
+        JDict["ZDA_DATETIME"] = str(x.year).zfill(2) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(
             2) + ' ' + str(x.timestamp)
 
 

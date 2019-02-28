@@ -26,8 +26,20 @@ from  datetime import datetime, timedelta
 #import json
 #from math import radians, cos, sin, asin, sqrt
 
+# The recommended way to use wx graphics and matplotlib (mpl) is with the WXAgg
+# backend.
+#
+import matplotlib
+matplotlib.use('WXAgg')
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_wxagg import \
+    FigureCanvasWxAgg as FigCanvas
+#from mpl_toolkits.axes_grid.parasite_axes import HostAxes, ParasiteAxes   DEPRECIATED
+from mpl_toolkits.axes_grid1.parasite_axes import HostAxes, ParasiteAxes
+import numpy as np
+
 from ScanMar_Serial_Tools import *
-from ScanMar_Nmea import SMN_TOOLS
+from ScanMar_Nmea3 import SMN_TOOLS
 from ScanMar_Window_Tools3 import *
 from ScanMar_Data_Tools3 import StatusVars,DataVars
 import wxSerialConfigDialog
@@ -64,10 +76,14 @@ class GraphFrame(wx.Frame):
 
         self.statusbar = self.create_status_bar()
 
+        # storage for the data
+        self.data = dict(Pres=[0], Temp=[0], Cond=[0], Sal=[0], F1=[0], F2=[0], L=[0], V=[0], Rate=[0], Et=[0])
 
         #build the display
         self.menubar = wx.MenuBar()
         self.populate_menu()
+        self.create_graph_panel()
+
         self.populate_main_panel()
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -115,6 +131,88 @@ class GraphFrame(wx.Frame):
 # **************************** End of GraphFrame Init **********************
 # *** GraphFrame Methods ***************************************************
 
+    def create_graph_panel(self):
+
+#        self.panel = wx.Panel(self)  # Create a Panel instance
+
+        # The Plot-  init_pot sets up the MatPlotLib graph
+        self.init_plot()
+
+        # Create a Canvas  make plot area background light gray
+        self.fig.patch.set_facecolor("lightgray")
+        self.canvas = FigCanvas(self.panel, -1, self.fig)
+
+    # ***********************************************************
+    # *********** Setup MatPlotLib graph of data ****************
+    def init_plot(self):
+        self.dpi = 100
+        self.fig = Figure((3.0, 4.5), dpi=self.dpi)
+
+        self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
+        self.par1 = ParasiteAxes(self.host, sharex=self.host)
+
+        self.host.parasites.append(self.par1)  # for multiple axis
+
+        self.host.tick_params(axis='both', which='major', labelsize=6)
+
+        # set the color of the graph area
+        self.host.set_facecolor('black')
+        #        self.host.set_edgecolor('gray')
+#        self.host.set_title('Bongo trace file= ' + self.LogFileName, size=10)
+        self.host.xaxis.set_label_coords(0.3, 0.5)
+        #        self.host.set_facecolor("lightslategray")
+
+        self.host.axis["right"].set_visible(False)
+        self.par1.axis["right"].set_visible(True)
+        self.par1.axis["left"].set_visible(False)
+        self.par1.set_ylabel(u"Temperature(°C)", fontweight='bold', fontsize=14)
+        #        self.host.axis["left"].label.set_size(12)
+
+        self.par1.axis["right"].major_ticklabels.set_visible(True)
+        self.par1.axis["right"].label.set_visible(True)
+
+        self.host.axis["left"].major_ticklabels.set_size(8)
+        self.host.axis["bottom"].major_ticklabels.set_size(8)
+        self.par1.axis["right"].major_ticklabels.set_size(8)
+
+        self.host.xaxis.set_label_coords(0.5, -0.06)
+        self.host.set_ylabel("Depth dB(~m)", fontweight='bold', fontsize=14)
+        self.host.set_xlabel("Time( Sec)", fontweight='bold', fontsize=10)
+
+        self.fig.add_axes(self.host)
+
+        # ctd pressure yellow
+        self.plot_Pres = self.host.plot(
+            self.data["Pres"], self.data["Et"],
+            linewidth=1,
+            color=(1, 1, 0),
+        )[0]
+        # temperature trace orange
+        self.plot_Temp = self.par1.plot(
+            self.data["Temp"], self.data["Et"],
+            linewidth=1,
+            color=(1, 0.5, 0),
+        )[0]
+
+        # fixed reference line (RED) drawn
+#        self.plot_Ref = self.host.plot(
+#            self.SlopeLineX, self.SlopeLineY,
+#            linewidth=1,
+#            color=(1, 0, 0),
+#        )[0]
+        self.axes = self.host
+
+        #        start, end = ax.get_xlim()
+        #        ax.xaxis.set_ticks(np.arange(start, end, 600))
+        #        self.host.legend()
+
+        self.host.axis["left"].label.set_color(self.plot_Pres.get_color())
+        self.par1.axis["right"].label.set_color(self.plot_Temp.get_color())
+
+    # *************** Enf of Init_Plot ***************************
+
+
+##################################################################################
     def populate_menu(self):
 
         menu_file = wx.Menu()
@@ -189,10 +287,10 @@ class GraphFrame(wx.Frame):
 
     def populate_button_strip(self,apanel):
 
-        buttonfont = wx.Font(18, wx.DECORATIVE, wx.ITALIC, wx.BOLD)
+        buttonfont = wx.Font(14, wx.DECORATIVE, wx.ITALIC, wx.BOLD)
 
         # IN WATER BUTTON
-        self.LoggerStart_button = wx.Button(apanel, -1, "   In Water  \nStart Logging\n(F3)")
+        self.LoggerStart_button = wx.Button(apanel, -1, "   Doors In  \nStart Logging\n(F3)")
         self.LoggerStart_button.SetFont(buttonfont)
         self.LoggerStart_button.SetForegroundColour("FOREST GREEN")  # set text back color
         self.Bind(wx.EVT_BUTTON, self.on_LoggerStart_button, self.LoggerStart_button)
@@ -205,7 +303,7 @@ class GraphFrame(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.on_BottomStart_button, self.BottomStart_button)
 
         # WARP ENTRY IS A NESTED SET OF OBJECTS
-        self.warpbox = wx.BoxSizer(wx.VERTICAL)
+        self.warpbox = wx.BoxSizer(wx.HORIZONTAL)
 
         # WARP ENTER BUTTON
         warpfont = wx.Font(12, wx.DECORATIVE,wx.NORMAL, wx.BOLD)
@@ -228,7 +326,7 @@ class GraphFrame(wx.Frame):
 #        self.WRPbox.Add(self.warpbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
         # OFF BOTTOM BUTTON
-        self.BottomEnd_button = wx.Button(apanel, -1,   "Off Bottom \nEnd Fishing Tow\n(F5)")
+        self.BottomEnd_button = wx.Button(apanel, -1,   "Doors out \nEnd Fishing Tow\n(F5)")
         self.BottomEnd_button.SetFont(buttonfont)
 #       self.monitor_button.SetBackgroundColour((255, 155, 0))  # set text back color
         self.BottomEnd_button.SetForegroundColour("FOREST GREEN")  # set text back color
@@ -344,21 +442,29 @@ class GraphFrame(wx.Frame):
         # NOTE: build from a sequence of tuples so that the order of the Dictionary is preserved
         # (normal a:b notation will not work to preserve order when passed into the OrderedDict )
 
-        timelabel=OrderedDict([("0",u"Current"),("1",u"1 scan Ago"),("2",u"2 scan Ago"),("3",u"3 scan Ago"),
-                                        ("4",u"4 scan Ago")])
+#        timelabel=OrderedDict([("0",u"Current"),("1",u"1 scan Ago"),("2",u"2 scan Ago"),("3",u"3 scan Ago"),
+#                                        ("4",u"4 scan Ago")]) # 5 line display
+
+        timelabel=OrderedDict([("0",u"Current")]) # single line display
 
         disp_label= RollingDialBox_multi_static(apanel, -1,"---- Log ----", timelabel, '0',80,
                                         wx.BLUE,wx.VERTICAL,afontsize)
 
         disp_text1=OrderedDict([("DVTLAM_P",''),("DVTLAM_R",''),("DVTLAS_P",''),("DVTLAS_R",''),
                                 ("DVTLAM_S",''),("CVTLAM_S",'')])
-        xx =OrderedDict([("0",'0'), ("1", '0'),( "2", '0'),( "3", '0'),("4", '0')])
+
+        # xx sets the left side labels and is also used to indicate the number of lines to generate in RollingBox_multi
+        xx =OrderedDict([("0",'0'), ("1", '0'),( "2", '0'),( "3", '0'),("4", '0')]) # orgian 5 line display
+
+        xx =OrderedDict([("0",'0')]) # single line display
+
+
         x2 = OrderedDict([("DVTLAM_P", 'Port-Pitch'), ("DVTLAM_R", 'Port-Roll'), ("DVTLAS_P",'Stbd-Pitch'),
                         ("DVTLAS_R",'Stbd-Roll'),("DVTLAM_S", 'Door-Spread'),("CVTLAM_S", 'Wing-Spread')])
 
         # build the data boxes,,  access as disp_text["DVTLAM"].Data_text["R"].SetValue(xxxx)
         for x in disp_text1 :
-            disp_text1[x] = RollingDialBox_multi(apanel, -1, x2[x],xx, '0',50,wx.BLACK,wx.VERTICAL,afontsize)
+            disp_text1[x] = RollingDialBox_multi(apanel, -1, x2[x],xx, '-',50,wx.BLACK,wx.VERTICAL,afontsize)
         hbox[1].Add(disp_label, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text1:
             hbox[1].Add(disp_text1[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -371,7 +477,7 @@ class GraphFrame(wx.Frame):
         x2 = OrderedDict([("TLT_P", 'Pitch'), ("TLT_R", 'Role')])
 
         for x in disp_text2:
-            disp_text2[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '0', 50, wx.BLACK, wx.VERTICAL,
+            disp_text2[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '-', 50, wx.BLACK, wx.VERTICAL,
                                                           afontsize)
                 #        self.hbox3.Add(self.disp_label3, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text2:
@@ -392,7 +498,7 @@ class GraphFrame(wx.Frame):
         x2 = OrderedDict([("TSP_X", 'Cross'), ("TSP_Y", 'Along')])
 
         for x in disp_text3 :
-            disp_text3[x] = RollingDialBox_multi(apanel, -1, x2[x],xx, '0',50,wx.BLACK,wx.VERTICAL,afontsize)
+            disp_text3[x] = RollingDialBox_multi(apanel, -1, x2[x],xx, '-',50,wx.BLACK,wx.VERTICAL,afontsize)
 #        self.hbox3.Add(self.disp_label3, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text3:
             hbox[3].Add(disp_text3[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -403,7 +509,7 @@ class GraphFrame(wx.Frame):
 
         x2 = OrderedDict([("TS_H", 'Height'), ("TS_O", 'Opening'), ("TS_C", 'Clear')])
         for x in disp_text4:
-            disp_text4[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '0', 60, wx.BLACK, wx.VERTICAL,afontsize)
+            disp_text4[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '-', 60, wx.BLACK, wx.VERTICAL,afontsize)
             #        self.hbox3.Add(self.disp_label3, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text4:
             hbox[4].Add(disp_text4[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -417,10 +523,9 @@ class GraphFrame(wx.Frame):
         hbox[5] = wx.BoxSizer(wx.HORIZONTAL)
         disp_text5 = OrderedDict([ ("DPTM_D", ''), ("DPTM_T", '')])
 
-        x2 = OrderedDict([
-                              ("DPTM_D", 'TrawlDepth'), ("DPTM_T", 'TrawlTemp')])
+        x2 = OrderedDict([("DPTM_D", 'TrawlDepth'), ("DPTM_T", 'TrawlTemp')])
         for x in disp_text5:
-            disp_text5[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '0', 60, wx.BLACK, wx.VERTICAL, afontsize)
+            disp_text5[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '-', 60, wx.BLACK, wx.VERTICAL, afontsize)
                 #        self.hbox3.Add(self.disp_label3, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text5:
             hbox[5].Add(disp_text5[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -439,31 +544,33 @@ class GraphFrame(wx.Frame):
         disp_text6a = OrderedDict([("TIMEDATE", '')])
         xxw = OrderedDict([("DATE", '00-00-00'), ("TIME", '00:00:00')])
 
-        disp_text6a["TIMEDATE"] = RollingDialBox_multi(apanel, -1, "PC TIME", xxw, '0', 155,
-                                                            wx.BLACK, wx.VERTICAL, afontmiddle +2)
+        disp_text6a["TIMEDATE"] = RollingDialBox_multi(apanel, -1, "PC TIME", xxw, '-', 155,
+                                                            wx.BLACK, wx.HORIZONTAL, afontmiddle +2)
         hbox[6].Add(disp_text6a["TIMEDATE"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         disp_text6 = OrderedDict([ ("ET-DIST", '')])
         xxw = OrderedDict([("ET", '00:00:00'),("DIST","00.000")])
         disp_text6["ET-DIST"] = RollingDialBox_multi(apanel, -1, "ET-DIST (Nm)",xxw, '0',160,
-                                                     wx.RED,wx.VERTICAL,afontbigger)
+                                                     wx.RED,wx.HORIZONTAL,afontbigger)
 
-        hbox[6].Add(disp_text6["ET-DIST"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        #ET-DIST
+        hbox[7] = wx.BoxSizer(wx.HORIZONTAL)
+        hbox[7].Add(disp_text6["ET-DIST"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
-        self.disp_label2= RollingDialBox_multi_static(apanel, -1,"---- Log ----", timelabel, '0',80,wx.BLUE,
+        self.disp_label2= RollingDialBox_multi_static(apanel, -1,"---- Log ----", timelabel, '-',80,wx.BLUE,
                                                       wx.VERTICAL,afontsize)
 
         # GPS DATA
         hbox[8] = wx.BoxSizer(wx.HORIZONTAL)
 
-        disp_text8 = OrderedDict([("ZDA_TS",''),("LAT",''),("LON",''),("VTG_COG",''),("VTG_SPD",'')])
-        disp_text8_size = OrderedDict([("ZDA_TS",70),("LAT",90),("LON",100),("VTG_COG",60),("VTG_SPD",60)])
+        disp_text8 = OrderedDict([("GLL_TS",''),("LAT",''),("LON",''),("VTG_COG",''),("VTG_SPD",'')])
+        disp_text8_size = OrderedDict([("GLL_TS",70),("LAT",90),("LON",100),("VTG_COG",60),("VTG_SPD",60)])
 
-        x2 = OrderedDict([("ZDA_TS",'Time (GPS)'),("LAT", 'Latitude'), ("LON", 'Longitude'),("VTG_COG","COG"), ("VTG_SPD", 'Speed (kn)')])
+        x2 = OrderedDict([("GLL_TS",'Time (GPS)'),("LAT", 'Latitude'), ("LON", 'Longitude'),("VTG_COG","COG"), ("VTG_SPD", 'Speed (kn)')])
 
         # build the data boxes,,  access as disp_text["DVTLAM"].Data_text["R"].SetValue(xxxx)
         for x in disp_text8:
-            disp_text8[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '0', disp_text8_size[x], wx.BLACK, wx.VERTICAL,afontsize)
+            disp_text8[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '-', disp_text8_size[x], wx.BLACK, wx.VERTICAL,afontsize)
         hbox[8].Add(self.disp_label2, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
         for x in disp_text8:
             hbox[8].Add(disp_text8[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
@@ -473,7 +580,7 @@ class GraphFrame(wx.Frame):
         disp_text11 = OrderedDict([("DBS", '')])
 
         x2 = OrderedDict([("DBS", 'Depth (m)')])
-        disp_text11["DBS"] = RollingDialBox_multi(apanel, -1, x2["DBS"], xx, '0', 80, wx.BLACK, wx.VERTICAL,
+        disp_text11["DBS"] = RollingDialBox_multi(apanel, -1, x2["DBS"], xx, '-', 80, wx.BLACK, wx.VERTICAL,
                                                       afontsize)
         hbox[11].Add(disp_text11["DBS"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
@@ -500,9 +607,15 @@ class GraphFrame(wx.Frame):
         self.DWbox.Add(hbox[1], 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
         InfoBx = wx.StaticBox(apanel,-1,"INFO")
-        self.Infobox = wx.StaticBoxSizer(InfoBx, wx.VERTICAL)
+#        self.Infobox = wx.StaticBoxSizer(InfoBx, wx.HORIZONTAL)
+        self.Infobox = wx.BoxSizer( wx.HORIZONTAL)
         self.Infobox.Add(hbox[6], 0, flag=wx.ALIGN_LEFT | wx.TOP)
         self.Infobox.Add(self.disp_BaseName, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+
+#        EtDistBx = wx.StaticBox(apanel,-1,"EtDist")
+#        self.EtDistbox = wx.StaticBoxSizer(EtDistBx, wx.HORIZONTAL)
+#        self.EtDistbox.Add(hbox[7], 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        self.EtDistbox = hbox[7]
 
         TLTbx = wx.StaticBox(apanel,-1,"Tilt Sensor")
         self.TLTbox = wx.StaticBoxSizer(TLTbx, wx.HORIZONTAL)
@@ -550,14 +663,17 @@ class GraphFrame(wx.Frame):
         LRbox2.AddSpacer(4)
         LRbox2.Add(self.DBSbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         LRbox2.AddSpacer(4)
-        LRbox2.Add(self.Infobox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        LRbox2.Add(self.EtDistbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
         # STACK ROWS OF BOXES
         vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(self.canvas, 1, flag=wx.ALIGN_LEFT | wx.TOP | wx.GROW) #plot
         vbox.Add(self.hbox0, 0, flag=wx.ALIGN_LEFT | wx.TOP)  # buttons
         vbox.Add(self.ELbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)   # events log
         vbox.Add(LRbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         vbox.Add(LRbox2, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+        vbox.Add(self.Infobox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+
 
         apanel.SetSizer(vbox)
         vbox.Fit(self)
@@ -567,7 +683,93 @@ class GraphFrame(wx.Frame):
         return( self.CreateStatusBar())
 
 # ###### END OF DISPLAY SET-UP ###############
+        #############################################
 
+    def draw_plot(self):
+        """ Redraws the plot
+        """
+
+        # when xmin is on auto, it "follows" xmax to produce a
+        # sliding window effect. therefore, xmin is assigned after
+        # xmax.
+        #
+        if self.xmax_control.is_auto():
+            xmax = len(self.data["Pres"]) if len(self.data["Pres"]) > 1800 else 1800
+        else:
+            xmax = int(self.xmax_control.manual_value())
+
+        xmin = 0.0
+
+        # for ymin and ymax, find the minimal and maximal values
+        # in the data set and add a mininal margin.
+        #
+        # note that it's easy to change this scheme to the
+        # minimal/maximal value in the current display, and not
+        # the whole data set.
+
+        if self.ymin_control.is_auto():
+            ymin = round(min(self.data["Pres"]), 0)
+        else:
+            ymin = int(self.ymin_control.manual_value())
+
+        if ymin > 0:  # we are working upside down
+            ymin *= -1.0
+        ymax = 0.0
+
+        if self.tmin_control.is_auto():
+            tmin = round(min(self.data["Temp"]), 0)
+        else:
+            tmin = int(self.tmin_control.manual_value())
+
+        if self.tmax_control.is_auto():
+            tmax = round(max(self.data["Temp"]), 0)
+        else:
+            tmax = int(self.tmax_control.manual_value())
+
+
+
+        # 60 is actually samples per minute from ctd, default is 1/sec but should be a var really
+        # neg 60 is to handle depth negative
+        DEFAULT_RATE = 1.0
+        SlopeTime1 = (ymin / self.Dslope) * -60.0 / DEFAULT_RATE
+        SlopeTime2 = SlopeTime1 + (ymin / self.Uslope) * -60.0 / DEFAULT_RATE
+
+        self.SlopeLineX = np.array([0.0, SlopeTime1, SlopeTime2])
+        self.SlopeLineY = np.array([0.0, ymin, 0.0])
+
+        self.host.set_xbound(lower=xmin, upper=xmax)
+        self.host.set_ybound(lower=ymin - 10.0, upper=ymax)
+
+        self.par1.set_xbound(lower=xmin, upper=xmax)
+        self.par1.set_ybound(lower=tmin, upper=tmax)
+
+        # anecdote: axes.grid assumes b=True if any other flag is
+        # given even if b is set to False.
+        # so just passing the flag into the first statement won't
+        # work.
+        #
+#        if self.cb_grid.IsChecked():
+#            self.axes.grid(True, color='gray')
+#        else:
+#            self.axes.grid(False)
+
+        # no need to redraw if we are idling the data input
+        if (self.GraphRun):
+            #            self.plot_Pres.set_xdata(np.arange(len(self.data["Pres"])))
+            self.plot_Pres.set_xdata(np.array(self.data["Et"]))
+            self.plot_Pres.set_ydata(np.array(self.data["Pres"]))
+            #            self.plot_Temp.set_xdata(np.arange(len(self.data["Temp"])))
+            self.plot_Temp.set_xdata(np.array(self.data["Et"]))
+            self.plot_Temp.set_ydata(np.array(self.data["Temp"]))
+
+            # if the ref line is changed
+        self.plot_Ref.set_xdata(self.SlopeLineX)
+        self.plot_Ref.set_ydata(self.SlopeLineY)
+
+        # any scalling changes or change to the ref line will get updated on this call
+        self.canvas.draw()
+
+    # *** END of draw_plot ********************88
 # ############################################
 # ************* ACTION METHODS ***************
 # ############################################
@@ -747,6 +949,8 @@ class GraphFrame(wx.Frame):
                 self.disp_text["ET-DIST"].Data_text["ET"].SetValue(str(timedelta(seconds=Et.seconds)))
                 self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["Long"]), float(self.data.JDict["Lat"]) )
                 self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('{:>7.3}'.format(self.data.dist))
+
+#                self.draw_plot()
 
 # process the block of data
         if block["OK"]:

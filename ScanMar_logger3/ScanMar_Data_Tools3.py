@@ -15,7 +15,7 @@ from math import radians, cos, sin, asin, sqrt
 
 from ScanMar_Serial_Tools import *
 
-from ScanMar_Nmea import SMN_TOOLS
+from ScanMar_Nmea3 import SMN_TOOLS
 import wxSerialConfigDialog
 
 from ScanMar_Window_Tools3 import *
