@@ -35,7 +35,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_wxagg import \
     FigureCanvasWxAgg as FigCanvas
 #from mpl_toolkits.axes_grid.parasite_axes import HostAxes, ParasiteAxes   DEPRECIATED
-from mpl_toolkits.axes_grid1.parasite_axes import HostAxes, ParasiteAxes
+#from mpl_toolkits.axes_grid1.parasite_axes import HostAxes, ParasiteAxes
+from mpl_toolkits.axisartist.parasite_axes import HostAxes, ParasiteAxes
 import numpy as np
 
 from ScanMar_Serial_Tools import *
@@ -51,8 +52,8 @@ ID_START_ARC = wx.NewId()
 ID_STOP_ARC = wx.NewId()
 ID_SER_CONF = wx.NewId()
 
-VERSION = "V1.23 Aug 23 2018"
-TITLE = "ScanMar_Logger2"
+VERSION = "V3.00 Feb 28 2019"
+TITLE = "ScanMar_Logger3"
 
 
 # ###################################################################
@@ -77,7 +78,18 @@ class GraphFrame(wx.Frame):
         self.statusbar = self.create_status_bar()
 
         # storage for the data
-        self.data = dict(Pres=[0], Temp=[0], Cond=[0], Sal=[0], F1=[0], F2=[0], L=[0], V=[0], Rate=[0], Et=[0])
+#        self.data = dict(Pres=[0], Temp=[0], Cond=[0], Sal=[0], F1=[0], F2=[0], L=[0], V=[0], Rate=[0], Et=[0])
+        #data variables and associated utitles for data and files
+
+        # these tools process the nema messages
+        self.smn_tools = SMN_TOOLS()
+
+        # status and state variables
+        self.status = StatusVars()
+
+        #data variables and associated utitles for data and files
+        self.data = DataVars(self,self.status)
+
 
         #build the display
         self.menubar = wx.MenuBar()
@@ -89,14 +101,6 @@ class GraphFrame(wx.Frame):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.panel,0,wx.EXPAND|wx.ALL,border=10)
 
-        # these tools process the nema messages
-        self.smn_tools = SMN_TOOLS()
-
-        # status and state variables
-        self.status = StatusVars()
-
-        #data variables and associated utitles for data and files
-        self.data = DataVars(self,self.status)
 
         # directory to store recorded data and logs
 #        if not os.path.exists(self.data.dataDir):
@@ -147,12 +151,18 @@ class GraphFrame(wx.Frame):
     def init_plot(self):
         self.dpi = 100
         self.fig = Figure((3.0, 4.5), dpi=self.dpi)
+#        self.fig.set_facecolor((1.0, 0.47, 0.42)) # makes button and bg light grey=green
 
         self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
         self.par1 = ParasiteAxes(self.host, sharex=self.host)
+        self.par2 = ParasiteAxes(self.host, sharex=self.host)
+        self.par3 = ParasiteAxes(self.host, sharex=self.host)
+        self.par4 = ParasiteAxes(self.host, sharex=self.host)
 
-        self.host.parasites.append(self.par1)  # for multiple axis
-
+        self.host.parasites.append(self.par1)  # for multiple axis 1
+        self.host.parasites.append(self.par2)  # for multiple axis 2
+        self.host.parasites.append(self.par3)  # for multiple axis 3
+        self.host.parasites.append(self.par4)  # for multiple axis 4
         self.host.tick_params(axis='both', which='major', labelsize=6)
 
         # set the color of the graph area
@@ -163,36 +173,90 @@ class GraphFrame(wx.Frame):
         #        self.host.set_facecolor("lightslategray")
 
         self.host.axis["right"].set_visible(False)
+
         self.par1.axis["right"].set_visible(True)
         self.par1.axis["left"].set_visible(False)
-        self.par1.set_ylabel(u"Temperature(°C)", fontweight='bold', fontsize=14)
+
+        self.par1.set_ylabel(u"Net Opening (m)", fontweight='bold', fontsize=14)
+
         #        self.host.axis["left"].label.set_size(12)
 
         self.par1.axis["right"].major_ticklabels.set_visible(True)
         self.par1.axis["right"].label.set_visible(True)
 
+
         self.host.axis["left"].major_ticklabels.set_size(8)
         self.host.axis["bottom"].major_ticklabels.set_size(8)
         self.par1.axis["right"].major_ticklabels.set_size(8)
 
+
+ #       self.par2.axis["right"].major_ticklabels.set_visible(True)
+#       self.par2.axis["right"].label.set_visible(True)
+
+
+        self.par2.set_ylabel("Door Spread (m)", fontweight='bold', fontsize=14)
+        offset = (50, 0)
+        new_axisline = self.par2._grid_helper.new_fixed_axis
+        self.par2.axis["right2"] = new_axisline(loc="right", axes=self.par2, offset=offset)
+        self.par2.axis["right2"].major_ticklabels.set_size(8)
+
+
+        self.par3.set_ylabel("Wing Spread (m)", fontweight='bold', fontsize=14)
+        offset = (100, 0)
+        new_axisline = self.par3._grid_helper.new_fixed_axis
+        self.par3.axis["right3"] = new_axisline(loc="right", axes=self.par3, offset=offset)
+        self.par3.axis["right3"].major_ticklabels.set_size(8)
+
+
+        self.par4.set_ylabel("Net Clearance (m)", fontweight='bold', fontsize=14)
+        offset = (-50, 0)
+        new_axisline = self.par3._grid_helper.new_fixed_axis
+        self.par4.axis["left2"] = new_axisline(loc="left", axes=self.par4, offset=offset)
+        self.par4.axis["left2"].major_ticklabels.set_size(8)
+
         self.host.xaxis.set_label_coords(0.5, -0.06)
-        self.host.set_ylabel("Depth dB(~m)", fontweight='bold', fontsize=14)
+        self.host.set_ylabel("Net Depth(m)", fontweight='bold', fontsize=14)
         self.host.set_xlabel("Time( Sec)", fontweight='bold', fontsize=10)
 
         self.fig.add_axes(self.host)
 
         # ctd pressure yellow
-        self.plot_Pres = self.host.plot(
-            self.data["Pres"], self.data["Et"],
+        self.plot_DPTM_D = self.host.plot(
+            self.data.pdata["DPTM_D"], self.data.pdata["ET"],
             linewidth=1,
             color=(1, 1, 0),
         )[0]
-        # temperature trace orange
-        self.plot_Temp = self.par1.plot(
-            self.data["Temp"], self.data["Et"],
+
+        # trawl opening trace orange
+        self.plot_TS_O = self.par1.plot(
+            self.data.pdata["TS_O"], self.data.pdata["Et"],
             linewidth=1,
             color=(1, 0.5, 0),
         )[0]
+
+        # trawl opening trace orange
+        self.plot_TS_C = self.par4.plot(
+            self.data.pdata["TS_C"], self.data.pdata["Et"],
+            linewidth=1,
+            color=(0.2, 0.5, 0.5),
+        )[0]
+        # door spread trace red
+        self.plot_DVTLAM_S = self.par2.plot(
+            self.data.pdata["DVTLAM_S"], self.data.pdata["ET"],
+            linewidth=1,
+            color=(1, 0, 0),
+        )[0]
+
+
+        # wing spread trace red
+        self.plot_CVTLAM_S = self.par3.plot(
+            self.data.pdata["CVTLAM_S"], self.data.pdata["ET"],
+            linewidth=1,
+            color=(0.5, 0, 0.5),
+        )[0]
+
+
+
 
         # fixed reference line (RED) drawn
 #        self.plot_Ref = self.host.plot(
@@ -206,8 +270,48 @@ class GraphFrame(wx.Frame):
         #        ax.xaxis.set_ticks(np.arange(start, end, 600))
         #        self.host.legend()
 
-        self.host.axis["left"].label.set_color(self.plot_Pres.get_color())
-        self.par1.axis["right"].label.set_color(self.plot_Temp.get_color())
+
+
+        self.host.axis["left"].label.set_color(self.plot_DPTM_D.get_color())
+        self.par1.axis["right"].label.set_color(self.plot_TS_O.get_color())
+        self.par2.axis["right2"].label.set_color(self.plot_DVTLAM_S.get_color())
+        self.par3.axis["right3"].label.set_color(self.plot_CVTLAM_S.get_color())
+        self.par4.axis["left2"].label.set_color(self.plot_TS_C.get_color())
+
+        xmin = 0
+        xmax = 1800
+        DPTM_D_min = 600.0
+
+        if DPTM_D_min > 0:  # we are working upside down
+            DPTM_D_min *= -1.0
+        DPTM_D_max = 0.0
+
+        TS_O_min = 1.0
+        TS_O_max = 8.0
+
+        TS_C_min = 0.0
+        TS_C_max = 10.0
+
+        DVTLAM_S_min = 10.0
+        DVTLAM_S_max = 80.0
+
+        CVTLAM_S_min = 5.0
+        CVTLAM_S_max = 30.0
+
+        self.host.set_xbound(lower=xmin, upper=xmax)
+        self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
+
+        self.par1.set_xbound(lower=xmin, upper=xmax)
+        self.par1.set_ybound(lower=TS_O_min, upper=TS_O_max)
+
+        self.par4.set_xbound(lower=xmin, upper=xmax)
+        self.par4.set_ybound(lower=TS_C_min, upper=TS_C_max)
+
+        self.par2.set_xbound(lower=xmin, upper=xmax)
+        self.par2.set_ybound(lower=DVTLAM_S_min, upper=DVTLAM_S_max)
+
+        self.par3.set_xbound(lower=xmin, upper=xmax)
+        self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
 
     # *************** Enf of Init_Plot ***************************
 
@@ -290,13 +394,13 @@ class GraphFrame(wx.Frame):
         buttonfont = wx.Font(14, wx.DECORATIVE, wx.ITALIC, wx.BOLD)
 
         # IN WATER BUTTON
-        self.LoggerStart_button = wx.Button(apanel, -1, "   Doors In  \nStart Logging\n(F3)")
+        self.LoggerStart_button = wx.Button(apanel, -1, " - Doors In -\nStart Logging\n(F3)")
         self.LoggerStart_button.SetFont(buttonfont)
         self.LoggerStart_button.SetForegroundColour("FOREST GREEN")  # set text back color
         self.Bind(wx.EVT_BUTTON, self.on_LoggerStart_button, self.LoggerStart_button)
 
         # ON BOTTOM BUTTON
-        self.BottomStart_button = wx.Button(apanel,-1, "On Bottom\nStart Fishing Tow\n(F4)")
+        self.BottomStart_button = wx.Button(apanel,-1, "On Bottom\nMark Start Fishing\n(F4)")
         self.BottomStart_button.SetFont(buttonfont)
 #       self.monitor_button.SetBackgroundColour((255, 155, 0))  # set text back color
         self.BottomStart_button.SetForegroundColour("FOREST GREEN")  # set text back color
@@ -326,14 +430,14 @@ class GraphFrame(wx.Frame):
 #        self.WRPbox.Add(self.warpbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
         # OFF BOTTOM BUTTON
-        self.BottomEnd_button = wx.Button(apanel, -1,   "Doors out \nEnd Fishing Tow\n(F5)")
+        self.BottomEnd_button = wx.Button(apanel, -1,   "Off Bottom Mark \nEnd Fishing\n(F5)")
         self.BottomEnd_button.SetFont(buttonfont)
 #       self.monitor_button.SetBackgroundColour((255, 155, 0))  # set text back color
         self.BottomEnd_button.SetForegroundColour("FOREST GREEN")  # set text back color
         self.Bind(wx.EVT_BUTTON, self.on_BottomEnd_button, self.BottomEnd_button)
 
         # OUT OF WATER BUTTON
-        self.LoggerEnd_button = wx.Button(apanel,-1,   " Out of Water  \nEnd Logging\n(F6)")
+        self.LoggerEnd_button = wx.Button(apanel,-1,   " - Doors Out - \nEnd Logging\n(F6)")
         self.LoggerEnd_button.SetFont(buttonfont)
         self.LoggerEnd_button.SetForegroundColour("FOREST GREEN")  # set text back color
         self.Bind(wx.EVT_BUTTON, self.on_LoggerEnd_button, self.LoggerEnd_button)
@@ -586,7 +690,7 @@ class GraphFrame(wx.Frame):
 
         # STATION ID
         self.disp_BaseName = RollingDialBox(apanel, -1, "-- Ship ----- Year ------ Trip ---- Set -- ",
-                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle)
+                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle +2)
 
 #        print self.BaseName
 
@@ -693,11 +797,12 @@ class GraphFrame(wx.Frame):
         # sliding window effect. therefore, xmin is assigned after
         # xmax.
         #
-        if self.xmax_control.is_auto():
-            xmax = len(self.data["Pres"]) if len(self.data["Pres"]) > 1800 else 1800
-        else:
-            xmax = int(self.xmax_control.manual_value())
+#        if self.xmax_control.is_auto():
+        xmax = len(self.data.dpada["ET"]) if len(self.data.pdata["ET"]) > 1800 else 1800
+#        else:
+#            xmax = int(self.xmax_control.manual_value())
 
+#        xmax = 400
         xmin = 0.0
 
         # for ymin and ymax, find the minimal and maximal values
@@ -707,41 +812,67 @@ class GraphFrame(wx.Frame):
         # minimal/maximal value in the current display, and not
         # the whole data set.
 
-        if self.ymin_control.is_auto():
-            ymin = round(min(self.data["Pres"]), 0)
-        else:
-            ymin = int(self.ymin_control.manual_value())
+#        if self.ymin_control.is_auto():
+#            ymin = round(min(self.data["Pres"]), 0)
+#        else:
+#            ymin = int(self.ymin_control.manual_value())
 
-        if ymin > 0:  # we are working upside down
-            ymin *= -1.0
-        ymax = 0.0
 
-        if self.tmin_control.is_auto():
-            tmin = round(min(self.data["Temp"]), 0)
-        else:
-            tmin = int(self.tmin_control.manual_value())
 
-        if self.tmax_control.is_auto():
-            tmax = round(max(self.data["Temp"]), 0)
-        else:
-            tmax = int(self.tmax_control.manual_value())
+#        if self.tmin_control.is_auto():
+#            tmin = round(min(self.data["Temp"]), 0)
+#        else:
+#            tmin = int(self.tmin_control.manual_value())
+
+#        if self.tmax_control.is_auto():
+#            tmax = round(max(self.data["Temp"]), 0)
+#        else:
+#            tmax = int(self.tmax_control.manual_value())
 
 
 
         # 60 is actually samples per minute from ctd, default is 1/sec but should be a var really
         # neg 60 is to handle depth negative
-        DEFAULT_RATE = 1.0
-        SlopeTime1 = (ymin / self.Dslope) * -60.0 / DEFAULT_RATE
-        SlopeTime2 = SlopeTime1 + (ymin / self.Uslope) * -60.0 / DEFAULT_RATE
+#        DEFAULT_RATE = 1.0
+#        SlopeTime1 = (ymin / self.Dslope) * -60.0 / DEFAULT_RATE
+#        SlopeTime2 = SlopeTime1 + (ymin / self.Uslope) * -60.0 / DEFAULT_RATE
 
-        self.SlopeLineX = np.array([0.0, SlopeTime1, SlopeTime2])
-        self.SlopeLineY = np.array([0.0, ymin, 0.0])
+#        self.SlopeLineX = np.array([0.0, SlopeTime1, SlopeTime2])
+#        self.SlopeLineY = np.array([0.0, ymin, 0.0])
+
+        DPTM_D_min = 600.0
+
+        if DPTM_D_min > 0:  # we are working upside down
+            DPTM_D_min *= -1.0
+        DPTM_D_max = 0.0
+
+        TS_O_min = 1.0
+        TS_O_max = 8.0
+
+        TS_C_min = 0.0
+        TS_C_max = 10.0
+
+        DVTLAM_S_min = 10.0
+        DVTLAM_S_max = 80.0
+
+        CVTLAM_S_min = 5.0
+        CVTLAM_S_max = 30.0
 
         self.host.set_xbound(lower=xmin, upper=xmax)
-        self.host.set_ybound(lower=ymin - 10.0, upper=ymax)
+        self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
 
         self.par1.set_xbound(lower=xmin, upper=xmax)
-        self.par1.set_ybound(lower=tmin, upper=tmax)
+        self.par1.set_ybound(lower=TS_O_min, upper=TS_O_max)
+
+        self.par4.set_xbound(lower=xmin, upper=xmax)
+        self.par4.set_ybound(lower=TS_C_min, upper=TS_C_max)
+
+        self.par2.set_xbound(lower=xmin, upper=xmax)
+        self.par2.set_ybound(lower=DVTLAM_S_min, upper=DVTLAM_S_max)
+
+        self.par3.set_xbound(lower=xmin, upper=xmax)
+        self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
+
 
         # anecdote: axes.grid assumes b=True if any other flag is
         # given even if b is set to False.
@@ -752,19 +883,31 @@ class GraphFrame(wx.Frame):
 #            self.axes.grid(True, color='gray')
 #        else:
 #            self.axes.grid(False)
+        self.axes.grid(True, color='gray')
 
         # no need to redraw if we are idling the data input
-        if (self.GraphRun):
+#        if (self.GraphRun):
+        if (True):
             #            self.plot_Pres.set_xdata(np.arange(len(self.data["Pres"])))
-            self.plot_Pres.set_xdata(np.array(self.data["Et"]))
-            self.plot_Pres.set_ydata(np.array(self.data["Pres"]))
+            self.plot_DPTM_D.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_DPTM_D.set_ydata(np.array(self.data.pdata["DPTM_D"]))
             #            self.plot_Temp.set_xdata(np.arange(len(self.data["Temp"])))
-            self.plot_Temp.set_xdata(np.array(self.data["Et"]))
-            self.plot_Temp.set_ydata(np.array(self.data["Temp"]))
+
+            self.plot_TS_O.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_TS_O.set_ydata(np.array(self.data.pdata["TS_O"]))
+
+            self.plot_TS_C.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_TS_C.set_ydata(np.array(self.data.pdata["TS_C"]))
+
+            self.plot_DVTLAM_S.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_DVTLAM_S.set_ydata(np.array(self.data.pdata["DVTLAM_S"]))
+
+            self.plot_CVTLAM_S.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_CVTLAM_S.set_ydata(np.array(self.data.pdata["CVTLAM_S"]))
 
             # if the ref line is changed
-        self.plot_Ref.set_xdata(self.SlopeLineX)
-        self.plot_Ref.set_ydata(self.SlopeLineY)
+#        self.plot_Ref.set_xdata(self.SlopeLineX)
+#        self.plot_Ref.set_ydata(self.SlopeLineY)
 
         # any scalling changes or change to the ref line will get updated on this call
         self.canvas.draw()
@@ -933,41 +1076,58 @@ class GraphFrame(wx.Frame):
                 block = self.BQueue.get()
             else:   # Empty Queue - do nothing
                 return()
+# process the block of data
+        if block["OK"]:
+            for sentence_type in block:
+                if sentence_type != "OK" and sentence_type != "REASON":  # skip these house keepers flag dict elements
+                    self.smn_tools.dispatch_message(sentence_type, block[sentence_type], self.disp_text, Raw_String,
+                                                    self.data.JDict)
+                else:
+                    pass
+        else:
+            if block["REASON"] == "FINISHED":
+                self.flash_status_message("DATA SOURCE SIGNALLED FINISHED")
+                if self.status.ARC_source:
+                    self.on_stop_arc(-1)
+                else:
+                    self.on_stop_rt(-1)
+            return ()
 
-        # This is the elapsed time since the start of monitoring the bottom section
+    # This is the elapsed time since the start of monitoring the bottom section
         if self.status.OnBottom:
             if self.status.StartTime == 0:
                 self.status.StartTime = datetime.now()
                 self.slat = float(self.data.JDict["Lat"])
                 self.slon = float(self.data.JDict["Long"])
                 ET = 0
+                self.data.JDict["ET"] = 0.0
                 self.data.dist  = 0.0
                 self.data.elapsed = ""
             else:
                 Et = datetime.now() - self.status.StartTime
                 self.data.elapsed = str(timedelta(seconds=Et.seconds))
+                self.data.JDict["ET"] = timedelta(seconds=Et.seconds).total_seconds()
                 self.disp_text["ET-DIST"].Data_text["ET"].SetValue(str(timedelta(seconds=Et.seconds)))
                 self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["Long"]), float(self.data.JDict["Lat"]) )
+                self.data.JDict["Dist"] = self.data.dist
                 self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('{:>7.3}'.format(self.data.dist))
 
-#                self.draw_plot()
 
-# process the block of data
-        if block["OK"]:
-            for sentence_type in block:
-                if sentence_type != "OK" and sentence_type != "REASON":     #skip these house keepers flag dict elements
-                    self.smn_tools.dispatch_message(sentence_type,block[sentence_type],self.disp_text,Raw_String,self.data.JDict)
-                else:
-                    pass
-        else:
-            if block["REASON"] == "FINISHED" :
-                self.flash_status_message("DATA SOURCE SIGNALLED FINISHED")
-                if self.status.ARC_source:
-                    self.on_stop_arc(-1)
-                else :
-                    self.on_stop_rt(-1)
-            return()
+# update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
+            try:
+                self.data.pdata["DPTM_D"].append(-1. * float(self.data.JDict["DPTM_D"]["measurement_val"]))
 
+                self.data.pdata["TS_O"].append(float(self.data.JDict["TS_O"]["measurement_val"])) # trawl opening
+                self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
+                self.data.pdata["DVTLAM_S"].append(float(self.data.JDict["DVTLAM_S"]["measurement_val"])) # door spead
+                self.data.pdata["CVTLAM_S"].append(float(self.data.JDict["CVTLAM_S"]["measurement_val"])) # wing stread
+
+                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
+            except:
+                return
+            self.draw_plot()
+
+# update the logfile(s)
         if self.status.LoggerRun:
             if self.status.RT_source:  # only write files not in archive playback mode
                 self.data.write_RawData(Raw_String)
