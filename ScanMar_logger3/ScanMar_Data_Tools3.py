@@ -18,7 +18,7 @@ from ScanMar_Serial_Tools import *
 from ScanMar_Nmea import SMN_TOOLS
 import wxSerialConfigDialog
 
-from ScanMar_Window_Tools import *
+from ScanMar_Window_Tools3 import *
 
 
 class StatusVars(object):

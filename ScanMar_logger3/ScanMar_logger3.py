@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #
-# ScanMar_logger2.py   D.Senciall  August 2017
+# ScanMar_logger3.py   D.Senciall  August 2017
 #
 """
 Some Elements BASED ON CODE SAMPLE FROM: matplotlib-with-wxpython-guis by E.Bendersky
@@ -28,8 +28,8 @@ from  datetime import datetime, timedelta
 
 from ScanMar_Serial_Tools import *
 from ScanMar_Nmea import SMN_TOOLS
-from ScanMar_Window_Tools import *
-from ScanMar_Data_Tools2 import StatusVars,DataVars
+from ScanMar_Window_Tools3 import *
+from ScanMar_Data_Tools3 import StatusVars,DataVars
 import wxSerialConfigDialog
 
 
