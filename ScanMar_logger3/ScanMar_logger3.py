@@ -153,18 +153,20 @@ class GraphFrame(wx.Frame):
         self.fig = Figure((3.0, 4.5), dpi=self.dpi)
 
 #        self.fig.set_facecolor((1.0, 0.47, 0.42)) # makes button and bg light grey=green
-        self.fig.suptitle('This is a somewhat long figure title', fontsize=12)
+
         self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
         self.host.set_facecolor("red")
         self.par1 = ParasiteAxes(self.host, sharex=self.host)
         self.par2 = ParasiteAxes(self.host, sharex=self.host)
         self.par3 = ParasiteAxes(self.host, sharex=self.host)
         self.par4 = ParasiteAxes(self.host, sharex=self.host)
+        self.par5 = ParasiteAxes(self.host, sharex=self.host)
 
         self.host.parasites.append(self.par1)  # for multiple axis 1
         self.host.parasites.append(self.par2)  # for multiple axis 2
         self.host.parasites.append(self.par3)  # for multiple axis 3
         self.host.parasites.append(self.par4)  # for multiple axis 4
+        self.host.parasites.append(self.par5)  # for multiple axis 5
         self.host.tick_params(axis='both', which='major', labelsize=6)
 
         # set the color of the graph area
@@ -176,21 +178,26 @@ class GraphFrame(wx.Frame):
 
         self.host.axis["right"].set_visible(False)
 
-        self.par1.axis["right"].set_visible(True)
-        self.par1.axis["left"].set_visible(False)
+#        self.par1.axis["right"].set_visible(True)
+#        self.par1.axis["left"].set_visible(False)
 
-        self.par1.set_ylabel(u"Net Opening (m)", fontweight='bold', fontsize=14)
+#        self.par1.set_ylabel(u"Net Opening (m)", fontweight='bold', fontsize=14)
 
         #        self.host.axis["left"].label.set_size(12)
 
-        self.par1.axis["right"].major_ticklabels.set_visible(True)
-        self.par1.axis["right"].label.set_visible(True)
+#       self.par1.axis["right"].major_ticklabels.set_visible(True)
+#       self.par1.axis["right"].label.set_visible(True)
 
 
         self.host.axis["left"].major_ticklabels.set_size(8)
         self.host.axis["bottom"].major_ticklabels.set_size(8)
-        self.par1.axis["right"].major_ticklabels.set_size(8)
+#        self.par1.axis["right"].major_ticklabels.set_size(8)
 
+        self.par1.set_ylabel("Net Opening (m)", fontweight='bold', fontsize=14)
+        offset = (10, 0)
+        new_axisline = self.par1._grid_helper.new_fixed_axis
+        self.par1.axis["right"] = new_axisline(loc="right", axes=self.par1, offset=offset)
+        self.par1.axis["right"].major_ticklabels.set_size(8)
 
  #       self.par2.axis["right"].major_ticklabels.set_visible(True)
 #       self.par2.axis["right"].label.set_visible(True)
@@ -216,6 +223,13 @@ class GraphFrame(wx.Frame):
         self.par4.axis["left"] = new_axisline(loc="left", axes=self.par4, offset=offset)
         self.par4.axis["left"].major_ticklabels.set_size(8)
 
+        self.par5.set_ylabel("Vessel Speed (Kn)", fontweight='bold', fontsize=14)
+        offset = (-90, 0)
+        new_axisline = self.par5._grid_helper.new_fixed_axis
+        self.par5.axis["left"] = new_axisline(loc="left", axes=self.par5, offset=offset)
+        self.par5.axis["left"].major_ticklabels.set_size(8)
+
+
         self.host.xaxis.set_label_coords(0.5, -0.06)
         self.host.set_ylabel("Net Depth(m)", fontweight='bold', fontsize=14)
         self.host.set_xlabel("Time( Sec)", fontweight='bold', fontsize=10)
@@ -231,16 +245,17 @@ class GraphFrame(wx.Frame):
 
         # trawl opening trace orange
         self.plot_TS_O = self.par1.plot(
-            self.data.pdata["TS_O"], self.data.pdata["Et"],
+            [0.0,0.0],
+#            self.data.pdata["TS_O"], self.data.pdata["ET"],
             linewidth=1,
             color=(1, 0.5, 0),
         )[0]
 
-        # trawl opening trace orange
+        # trawl clearance trace
         self.plot_TS_C = self.par4.plot(
             [0.0,0.0],
             linewidth=1,
-            color=(0.2, 0.5, 0.5),
+            color=(0.2, 0.4, 0.4),
         )[0]
         # door spread trace red
         self.plot_DVTLAM_S = self.par2.plot(
@@ -254,10 +269,15 @@ class GraphFrame(wx.Frame):
         self.plot_CVTLAM_S = self.par3.plot(
             [0.0,0.0],
             linewidth=1,
-            color=(0.5, 0, 0.5),
+            color=(0.3, 0, 0.3),
         )[0]
 
-
+        # wing spread trace red
+        self.plot_VTG_SPD = self.par5.plot(
+            [0.0,0.0],
+            linewidth=1,
+            color=(0.2, 1, 0.2),
+        )[0]
 
 
         # fixed reference line (RED) drawn
@@ -279,7 +299,7 @@ class GraphFrame(wx.Frame):
         self.par2.axis["right"].label.set_color(self.plot_DVTLAM_S.get_color())
         self.par3.axis["right"].label.set_color(self.plot_CVTLAM_S.get_color())
         self.par4.axis["left"].label.set_color(self.plot_TS_C.get_color())
-
+        self.par5.axis["left"].label.set_color(self.plot_VTG_SPD.get_color())
         xmin = 0
         xmax = 1800
         DPTM_D_min = 600.0
@@ -291,14 +311,19 @@ class GraphFrame(wx.Frame):
         TS_O_min = 1.0
         TS_O_max = 8.0
 
-        TS_C_min = 0.0
-        TS_C_max = 10.0
+        TS_C_min = -1.0
+        TS_C_max = 11.0
 
         DVTLAM_S_min = 10.0
         DVTLAM_S_max = 80.0
 
         CVTLAM_S_min = 5.0
         CVTLAM_S_max = 30.0
+
+
+        VTG_SPD_min = 0.0
+        VTG_SPD_max = 5.0
+
 
         self.host.set_xbound(lower=xmin, upper=xmax)
         self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
@@ -314,6 +339,9 @@ class GraphFrame(wx.Frame):
 
         self.par3.set_xbound(lower=xmin, upper=xmax)
         self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
+
+        self.par5.set_xbound(lower=xmin, upper=xmax)
+        self.par5.set_ybound(lower=VTG_SPD_min, upper=VTG_SPD_max)
 
 #        self.host.legend()
 
@@ -797,6 +825,8 @@ class GraphFrame(wx.Frame):
         """ Redraws the plot
         """
 
+        self.fig.suptitle(self.data.basename, fontsize=12)
+
         # when xmin is on auto, it "follows" xmax to produce a
         # sliding window effect. therefore, xmin is assigned after
         # xmax.
@@ -853,14 +883,17 @@ class GraphFrame(wx.Frame):
         TS_O_min = 1.0
         TS_O_max = 8.0
 
-        TS_C_min = 0.0
-        TS_C_max = 10.0
+        TS_C_min = -1.0
+        TS_C_max = 11.0
 
         DVTLAM_S_min = 10.0
         DVTLAM_S_max = 80.0
 
         CVTLAM_S_min = 5.0
         CVTLAM_S_max = 30.0
+
+        VTG_SPD_min = 0.0
+        VTG_SPD_max = 5.0
 
         self.host.set_xbound(lower=xmin, upper=xmax)
         self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
@@ -877,6 +910,8 @@ class GraphFrame(wx.Frame):
         self.par3.set_xbound(lower=xmin, upper=xmax)
         self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
 
+        self.par5.set_xbound(lower=xmin, upper=xmax)
+        self.par5.set_ybound(lower=VTG_SPD_min, upper=VTG_SPD_max)
 
         # anecdote: axes.grid assumes b=True if any other flag is
         # given even if b is set to False.
@@ -908,6 +943,9 @@ class GraphFrame(wx.Frame):
 
             self.plot_CVTLAM_S.set_xdata(np.array(self.data.pdata["ET"]))
             self.plot_CVTLAM_S.set_ydata(np.array(self.data.pdata["CVTLAM_S"]))
+
+            self.plot_VTG_SPD.set_xdata(np.array(self.data.pdata["ET"]))
+            self.plot_VTG_SPD.set_ydata(np.array(self.data.pdata["VTG_SPD"]))
 
             # if the ref line is changed
 #        self.plot_Ref.set_xdata(self.SlopeLineX)
@@ -1152,7 +1190,7 @@ class GraphFrame(wx.Frame):
                 self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
                 self.data.pdata["DVTLAM_S"].append(float(self.data.JDict["DVTLAM_S"]["measurement_val"])) # door spead
                 self.data.pdata["CVTLAM_S"].append(float(self.data.JDict["CVTLAM_S"]["measurement_val"])) # wing stread
-
+                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
                 self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
             except:
                 return
