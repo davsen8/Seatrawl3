@@ -151,9 +151,11 @@ class GraphFrame(wx.Frame):
     def init_plot(self):
         self.dpi = 100
         self.fig = Figure((3.0, 4.5), dpi=self.dpi)
-#        self.fig.set_facecolor((1.0, 0.47, 0.42)) # makes button and bg light grey=green
 
+#        self.fig.set_facecolor((1.0, 0.47, 0.42)) # makes button and bg light grey=green
+        self.fig.suptitle('This is a somewhat long figure title', fontsize=12)
         self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
+        self.host.set_facecolor("red")
         self.par1 = ParasiteAxes(self.host, sharex=self.host)
         self.par2 = ParasiteAxes(self.host, sharex=self.host)
         self.par3 = ParasiteAxes(self.host, sharex=self.host)
@@ -197,22 +199,22 @@ class GraphFrame(wx.Frame):
         self.par2.set_ylabel("Door Spread (m)", fontweight='bold', fontsize=14)
         offset = (50, 0)
         new_axisline = self.par2._grid_helper.new_fixed_axis
-        self.par2.axis["right2"] = new_axisline(loc="right", axes=self.par2, offset=offset)
-        self.par2.axis["right2"].major_ticklabels.set_size(8)
+        self.par2.axis["right"] = new_axisline(loc="right", axes=self.par2, offset=offset)
+        self.par2.axis["right"].major_ticklabels.set_size(8)
 
 
         self.par3.set_ylabel("Wing Spread (m)", fontweight='bold', fontsize=14)
         offset = (100, 0)
         new_axisline = self.par3._grid_helper.new_fixed_axis
-        self.par3.axis["right3"] = new_axisline(loc="right", axes=self.par3, offset=offset)
-        self.par3.axis["right3"].major_ticklabels.set_size(8)
+        self.par3.axis["right"] = new_axisline(loc="right", axes=self.par3, offset=offset)
+        self.par3.axis["right"].major_ticklabels.set_size(8)
 
 
         self.par4.set_ylabel("Net Clearance (m)", fontweight='bold', fontsize=14)
         offset = (-50, 0)
-        new_axisline = self.par3._grid_helper.new_fixed_axis
-        self.par4.axis["left2"] = new_axisline(loc="left", axes=self.par4, offset=offset)
-        self.par4.axis["left2"].major_ticklabels.set_size(8)
+        new_axisline = self.par4._grid_helper.new_fixed_axis
+        self.par4.axis["left"] = new_axisline(loc="left", axes=self.par4, offset=offset)
+        self.par4.axis["left"].major_ticklabels.set_size(8)
 
         self.host.xaxis.set_label_coords(0.5, -0.06)
         self.host.set_ylabel("Net Depth(m)", fontweight='bold', fontsize=14)
@@ -222,7 +224,7 @@ class GraphFrame(wx.Frame):
 
         # ctd pressure yellow
         self.plot_DPTM_D = self.host.plot(
-            self.data.pdata["DPTM_D"], self.data.pdata["ET"],
+            [0.0,0.0],
             linewidth=1,
             color=(1, 1, 0),
         )[0]
@@ -236,21 +238,21 @@ class GraphFrame(wx.Frame):
 
         # trawl opening trace orange
         self.plot_TS_C = self.par4.plot(
-            self.data.pdata["TS_C"], self.data.pdata["Et"],
+            [0.0,0.0],
             linewidth=1,
             color=(0.2, 0.5, 0.5),
         )[0]
         # door spread trace red
         self.plot_DVTLAM_S = self.par2.plot(
-            self.data.pdata["DVTLAM_S"], self.data.pdata["ET"],
+#            self.data.pdata["DVTLAM_S"], self.data.pdata["ET"],
+            [0.0,0.0],
             linewidth=1,
             color=(1, 0, 0),
         )[0]
 
-
         # wing spread trace red
         self.plot_CVTLAM_S = self.par3.plot(
-            self.data.pdata["CVTLAM_S"], self.data.pdata["ET"],
+            [0.0,0.0],
             linewidth=1,
             color=(0.5, 0, 0.5),
         )[0]
@@ -274,9 +276,9 @@ class GraphFrame(wx.Frame):
 
         self.host.axis["left"].label.set_color(self.plot_DPTM_D.get_color())
         self.par1.axis["right"].label.set_color(self.plot_TS_O.get_color())
-        self.par2.axis["right2"].label.set_color(self.plot_DVTLAM_S.get_color())
-        self.par3.axis["right3"].label.set_color(self.plot_CVTLAM_S.get_color())
-        self.par4.axis["left2"].label.set_color(self.plot_TS_C.get_color())
+        self.par2.axis["right"].label.set_color(self.plot_DVTLAM_S.get_color())
+        self.par3.axis["right"].label.set_color(self.plot_CVTLAM_S.get_color())
+        self.par4.axis["left"].label.set_color(self.plot_TS_C.get_color())
 
         xmin = 0
         xmax = 1800
@@ -312,6 +314,8 @@ class GraphFrame(wx.Frame):
 
         self.par3.set_xbound(lower=xmin, upper=xmax)
         self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
+
+#        self.host.legend()
 
     # *************** Enf of Init_Plot ***************************
 
@@ -649,7 +653,7 @@ class GraphFrame(wx.Frame):
         xxw = OrderedDict([("DATE", '00-00-00'), ("TIME", '00:00:00')])
 
         disp_text6a["TIMEDATE"] = RollingDialBox_multi(apanel, -1, "PC TIME", xxw, '-', 155,
-                                                            wx.BLACK, wx.HORIZONTAL, afontmiddle +2)
+                                                            wx.BLACK, wx.HORIZONTAL, afontmiddle)
         hbox[6].Add(disp_text6a["TIMEDATE"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         disp_text6 = OrderedDict([ ("ET-DIST", '')])
@@ -690,7 +694,7 @@ class GraphFrame(wx.Frame):
 
         # STATION ID
         self.disp_BaseName = RollingDialBox(apanel, -1, "-- Ship ----- Year ------ Trip ---- Set -- ",
-                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle +2)
+                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle)
 
 #        print self.BaseName
 
@@ -798,7 +802,7 @@ class GraphFrame(wx.Frame):
         # xmax.
         #
 #        if self.xmax_control.is_auto():
-        xmax = len(self.data.dpada["ET"]) if len(self.data.pdata["ET"]) > 1800 else 1800
+        xmax = len(self.data.pdata["ET"]) if len(self.data.pdata["ET"]) > 1800 else 1800
 #        else:
 #            xmax = int(self.xmax_control.manual_value())
 
@@ -913,7 +917,33 @@ class GraphFrame(wx.Frame):
         self.canvas.draw()
 
     # *** END of draw_plot ********************88
-# ############################################
+    def erase_plot(self):
+
+        self.plot_DPTM_D.set_xdata(np.array([0.0]))
+        self.plot_DPTM_D.set_ydata(np.array([0.0]))
+        #            self.plot_Temp.set_xdata(np.arange(len(self.data["Temp"])))
+
+        self.plot_TS_O.set_xdata(np.array([0.0]))
+        self.plot_TS_O.set_ydata(np.array([0.0]))
+
+        self.plot_TS_C.set_xdata(np.array([0.0]))
+        self.plot_TS_C.set_ydata(np.array([0.0]))
+
+        self.plot_DVTLAM_S.set_xdata(np.array([0.0]))
+        self.plot_DVTLAM_S.set_ydata(np.array([0.0]))
+
+        self.plot_CVTLAM_S.set_xdata(np.array([0.0]))
+        self.plot_CVTLAM_S.set_ydata(np.array([0.0]))
+
+        self.canvas.draw()
+
+    # Save plot image
+    def on_save_plot(self, event):
+
+            self.canvas.print_figure(self.data.PLOTFileName, dpi=self.dpi)
+            self.flash_status_message("Image Saved to %s" % self.data.PLOTFileName)
+
+    # ############################################
 # ************* ACTION METHODS ***************
 # ############################################
 
@@ -981,7 +1011,7 @@ class GraphFrame(wx.Frame):
 
         if not self.LoggerEnd_button.IsEnabled():
             return
-
+        self.on_save_plot(1)
         self.status.LoggerRun = False
         self.screen_log.AppendText('\n' + self.data.mark_event("OUTWATER"))
         self.Warp_text.Enable(False)
@@ -991,6 +1021,7 @@ class GraphFrame(wx.Frame):
         if self.status.RT_source:
             self.on_Increment_tow_button(-1)
         self.flash_status_message("TOW ENDED")
+
 
     def on_Abort_button(self, event):
 
@@ -1304,6 +1335,8 @@ class GraphFrame(wx.Frame):
         self.disp_text["ET-DIST"].Data_text["ET"].SetValue('00:00:00')
         self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('0000.0')
         self.Warp_text.SetValue('')
+        self.erase_plot()
+        self.data.initialize_pdata()
 
 
     def on_set_base_header(self,event):
