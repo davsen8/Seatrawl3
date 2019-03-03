@@ -138,12 +138,12 @@ class GraphFrame(wx.Frame):
     def create_graph_panel(self):
 
 #        self.panel = wx.Panel(self)  # Create a Panel instance
-
+        self.data.intial_plot_parms()
         # The Plot-  init_pot sets up the MatPlotLib graph
         self.init_plot()
 
         # Create a Canvas  make plot area background light gray
-        self.fig.patch.set_facecolor("lightgray")
+#        self.fig.patch.set_facecolor("lightgray")
         self.canvas = FigCanvas(self.panel, -1, self.fig)
 
     # ***********************************************************
@@ -151,199 +151,104 @@ class GraphFrame(wx.Frame):
     def init_plot(self):
         self.dpi = 100
         self.fig = Figure((3.0, 4.5), dpi=self.dpi)
+        self.fig.patch.set_facecolor("lightgray")
 
-#        self.fig.set_facecolor((1.0, 0.47, 0.42)) # makes button and bg light grey=green
+
+# plot 0 is host 1-5 are parasites
+        self.p_axis_list = [i for i in range(6)]    # empty list to hold dictionaries of parasite axis objects
+        self.axis_plot = [i for i in range(6)]    # empty list to hold plots (o will be used for host
 
         self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
-        self.host.set_facecolor("red")
-        self.par1 = ParasiteAxes(self.host, sharex=self.host)
-        self.par2 = ParasiteAxes(self.host, sharex=self.host)
-        self.par3 = ParasiteAxes(self.host, sharex=self.host)
-        self.par4 = ParasiteAxes(self.host, sharex=self.host)
-        self.par5 = ParasiteAxes(self.host, sharex=self.host)
+        # create paarsite axis on host axis; sharing common x parameter
+        for i in range (1,6,1):
+            self.p_axis_list[i] = ParasiteAxes(self.host, sharex=self.host)
 
-        self.host.parasites.append(self.par1)  # for multiple axis 1
-        self.host.parasites.append(self.par2)  # for multiple axis 2
-        self.host.parasites.append(self.par3)  # for multiple axis 3
-        self.host.parasites.append(self.par4)  # for multiple axis 4
-        self.host.parasites.append(self.par5)  # for multiple axis 5
-        self.host.tick_params(axis='both', which='major', labelsize=6)
+        # attache parasite axis to host axis
+        for i in range (1,6,1):
+            self.host.parasites.append(self.p_axis_list[i])
 
         # set the color of the graph area
-        self.host.set_facecolor('black')
+        self.host.set_facecolor([0.7,0.7,0.7])  # a medium gray graph area color
+
+        self.host.tick_params(axis='left', which='major', labelsize=6)
+
+        self.host.axis["right"].set_visible(False)  #turn of right side labels
+        self.host.axis["left"].major_ticklabels.set_size(8)
+
+        self.host.set_ylabel(self.data.host_axis["LABEL"], fontweight='bold', fontsize=14)
+
+        self.host.set_xlabel(self.data.x_axis["LABEL"], fontweight='bold', fontsize=10)
+
+        self.host.axis["bottom"].major_ticklabels.set_size(8)
+        self.host.xaxis.set_label_coords(self.data.x_axis["OFFSET"][0],self.data.x_axis["OFFSET"][1])
+        self.host.set_ylabel(self.data.host_axis["LABEL"], fontweight='bold', fontsize=14)
+
+
+
+
         #        self.host.set_edgecolor('gray')
 #        self.host.set_title('Bongo trace file= ' + self.LogFileName, size=10)
-        self.host.xaxis.set_label_coords(0.3, 0.5)
-        #        self.host.set_facecolor("lightslategray")
-
-        self.host.axis["right"].set_visible(False)
-
 #        self.par1.axis["right"].set_visible(True)
 #        self.par1.axis["left"].set_visible(False)
-
 #        self.par1.set_ylabel(u"Net Opening (m)", fontweight='bold', fontsize=14)
-
         #        self.host.axis["left"].label.set_size(12)
-
 #       self.par1.axis["right"].major_ticklabels.set_visible(True)
 #       self.par1.axis["right"].label.set_visible(True)
 
 
-        self.host.axis["left"].major_ticklabels.set_size(8)
-        self.host.axis["bottom"].major_ticklabels.set_size(8)
+
 #        self.par1.axis["right"].major_ticklabels.set_size(8)
 
-        self.par1.set_ylabel("Net Opening (m)", fontweight='bold', fontsize=14)
-        offset = (10, 0)
-        new_axisline = self.par1._grid_helper.new_fixed_axis
-        self.par1.axis["right"] = new_axisline(loc="right", axes=self.par1, offset=offset)
-        self.par1.axis["right"].major_ticklabels.set_size(8)
 
- #       self.par2.axis["right"].major_ticklabels.set_visible(True)
-#       self.par2.axis["right"].label.set_visible(True)
-
-
-        self.par2.set_ylabel("Door Spread (m)", fontweight='bold', fontsize=14)
-        offset = (50, 0)
-        new_axisline = self.par2._grid_helper.new_fixed_axis
-        self.par2.axis["right"] = new_axisline(loc="right", axes=self.par2, offset=offset)
-        self.par2.axis["right"].major_ticklabels.set_size(8)
+        for i in range (1,6,1):
+            self.p_axis_list[i].set_ylabel(self.data.p_axis[i]["LABEL"], fontweight='bold', fontsize=14)
+            location = self.data.p_axis[i]["SIDE"]
+            new_axisline = self.p_axis_list[i]._grid_helper.new_fixed_axis
+            self.p_axis_list[i].axis[location] = new_axisline(loc=location, axes=self.p_axis_list[i],
+                                                    offset=self.data.p_axis[i]["OFFSET"])
+            self.p_axis_list[i].axis[location].major_ticklabels.set_size(8)
 
 
-        self.par3.set_ylabel("Wing Spread (m)", fontweight='bold', fontsize=14)
-        offset = (100, 0)
-        new_axisline = self.par3._grid_helper.new_fixed_axis
-        self.par3.axis["right"] = new_axisline(loc="right", axes=self.par3, offset=offset)
-        self.par3.axis["right"].major_ticklabels.set_size(8)
 
 
-        self.par4.set_ylabel("Net Clearance (m)", fontweight='bold', fontsize=14)
-        offset = (-50, 0)
-        new_axisline = self.par4._grid_helper.new_fixed_axis
-        self.par4.axis["left"] = new_axisline(loc="left", axes=self.par4, offset=offset)
-        self.par4.axis["left"].major_ticklabels.set_size(8)
+        self.fig.add_axes(self.host)
+        self.host.axes.grid(True, color='gray')
 
-        self.par5.set_ylabel("Vessel Speed (Kn)", fontweight='bold', fontsize=14)
-        offset = (-90, 0)
-        new_axisline = self.par5._grid_helper.new_fixed_axis
-        self.par5.axis["left"] = new_axisline(loc="left", axes=self.par5, offset=offset)
-        self.par5.axis["left"].major_ticklabels.set_size(8)
-
-
+    # axis plot 0 is host 1-5 are parasites
+    # setup the traces, initialize with a single 0 data point pair, and set their color
         self.host.xaxis.set_label_coords(0.5, -0.06)
-        self.host.set_ylabel("Net Depth(m)", fontweight='bold', fontsize=14)
-        self.host.set_xlabel("Time( Sec)", fontweight='bold', fontsize=10)
+        clr = self.data.host_axis["COLOR"]
+        self.axis_plot[0]= self.host.plot([0.0,0.0],linewidth=1,color=clr,)[0]
 
-        self.fig.add_axes(self.host)
+        self.host.axis[self.data.host_axis["SIDE"]].label.set_color(self.axis_plot[0].get_color())
+        self.host.axis[self.data.host_axis["SIDE"]].label.set_color(clr)
+        self.host.tick_params(axis='y', colors=clr)
 
-        # ctd pressure yellow
-        self.plot_DPTM_D = self.host.plot(
-            [0.0,0.0],
-            linewidth=1,
-            color=(1, 1, 0),
-        )[0]
+        self.host.axis[self.data.host_axis["SIDE"]].line.set_color(self.axis_plot[0].get_color())
+        self.host.axis[self.data.host_axis["SIDE"]].major_ticks.set_color(self.axis_plot[0].get_color())
+        self.host.axis[self.data.host_axis["SIDE"]].major_ticklabels.set_color(self.axis_plot[0].get_color())
 
-        # trawl opening trace orange
-        self.plot_TS_O = self.par1.plot(
-            [0.0,0.0],
-#            self.data.pdata["TS_O"], self.data.pdata["ET"],
-            linewidth=1,
-            color=(1, 0.5, 0),
-        )[0]
+        self.host.set_xbound(lower=self.data.x_axis["MIN"] , upper=self.data.x_axis["MAX"])
+        self.host.set_ybound(lower=self.data.host_axis["MIN"] - 10.0, upper=self.data.host_axis["MAX"])
 
-        # trawl clearance trace
-        self.plot_TS_C = self.par4.plot(
-            [0.0,0.0],
-            linewidth=1,
-            color=(0.2, 0.4, 0.4),
-        )[0]
-        # door spread trace red
-        self.plot_DVTLAM_S = self.par2.plot(
-#            self.data.pdata["DVTLAM_S"], self.data.pdata["ET"],
-            [0.0,0.0],
-            linewidth=1,
-            color=(1, 0, 0),
-        )[0]
+    # assign the trace colors to the axis labels and ticks
+        for i in range (1,6,1):
 
-        # wing spread trace red
-        self.plot_CVTLAM_S = self.par3.plot(
-            [0.0,0.0],
-            linewidth=1,
-            color=(0.3, 0, 0.3),
-        )[0]
-
-        # wing spread trace red
-        self.plot_VTG_SPD = self.par5.plot(
-            [0.0,0.0],
-            linewidth=1,
-            color=(0.2, 1, 0.2),
-        )[0]
+            clr = self.data.p_axis[i]["COLOR"]
+            self.axis_plot[i] = self.p_axis_list[i].plot([0.0, 0.0], linewidth=1, color=clr, )[0]
 
 
-        # fixed reference line (RED) drawn
-#        self.plot_Ref = self.host.plot(
-#            self.SlopeLineX, self.SlopeLineY,
-#            linewidth=1,
-#            color=(1, 0, 0),
-#        )[0]
-        self.axes = self.host
-
-        #        start, end = ax.get_xlim()
-        #        ax.xaxis.set_ticks(np.arange(start, end, 600))
-        #        self.host.legend()
+            self.p_axis_list[i].axis[self.data.p_axis[i]["SIDE"]].label.set_color(clr) # axis label
+            self.p_axis_list[i].axis[self.data.p_axis[i]["SIDE"]].line.set_color(self.axis_plot[i].get_color())
+            self.p_axis_list[i].axis[self.data.p_axis[i]["SIDE"]].major_ticks.set_color(self.axis_plot[i].get_color())
+            self.p_axis_list[i].axis[self.data.p_axis[i]["SIDE"]].major_ticklabels.set_color(self.axis_plot[i].get_color())
 
 
 
-        self.host.axis["left"].label.set_color(self.plot_DPTM_D.get_color())
-        self.par1.axis["right"].label.set_color(self.plot_TS_O.get_color())
-        self.par2.axis["right"].label.set_color(self.plot_DVTLAM_S.get_color())
-        self.par3.axis["right"].label.set_color(self.plot_CVTLAM_S.get_color())
-        self.par4.axis["left"].label.set_color(self.plot_TS_C.get_color())
-        self.par5.axis["left"].label.set_color(self.plot_VTG_SPD.get_color())
-        xmin = 0
-        xmax = 1800
-        DPTM_D_min = 600.0
 
-        if DPTM_D_min > 0:  # we are working upside down
-            DPTM_D_min *= -1.0
-        DPTM_D_max = 0.0
+            self.p_axis_list[i].set_xbound(lower=self.data.x_axis["MIN"], upper=self.data.x_axis["MAX"])
+            self.p_axis_list[i].set_ybound(lower=self.data.p_axis[i]["MIN"], upper=self.data.p_axis[i]["MAX"])
 
-        TS_O_min = 1.0
-        TS_O_max = 8.0
-
-        TS_C_min = -1.0
-        TS_C_max = 11.0
-
-        DVTLAM_S_min = 10.0
-        DVTLAM_S_max = 80.0
-
-        CVTLAM_S_min = 5.0
-        CVTLAM_S_max = 30.0
-
-
-        VTG_SPD_min = 0.0
-        VTG_SPD_max = 5.0
-
-
-        self.host.set_xbound(lower=xmin, upper=xmax)
-        self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
-
-        self.par1.set_xbound(lower=xmin, upper=xmax)
-        self.par1.set_ybound(lower=TS_O_min, upper=TS_O_max)
-
-        self.par4.set_xbound(lower=xmin, upper=xmax)
-        self.par4.set_ybound(lower=TS_C_min, upper=TS_C_max)
-
-        self.par2.set_xbound(lower=xmin, upper=xmax)
-        self.par2.set_ybound(lower=DVTLAM_S_min, upper=DVTLAM_S_max)
-
-        self.par3.set_xbound(lower=xmin, upper=xmax)
-        self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
-
-        self.par5.set_xbound(lower=xmin, upper=xmax)
-        self.par5.set_ybound(lower=VTG_SPD_min, upper=VTG_SPD_max)
-
-#        self.host.legend()
 
     # *************** Enf of Init_Plot ***************************
 
@@ -874,44 +779,44 @@ class GraphFrame(wx.Frame):
 #        self.SlopeLineX = np.array([0.0, SlopeTime1, SlopeTime2])
 #        self.SlopeLineY = np.array([0.0, ymin, 0.0])
 
-        DPTM_D_min = 600.0
+#        DPTM_D_min = 600.0
 
-        if DPTM_D_min > 0:  # we are working upside down
-            DPTM_D_min *= -1.0
-        DPTM_D_max = 0.0
+#        if DPTM_D_min > 0:  # we are working upside down
+#            DPTM_D_min *= -1.0
+#        DPTM_D_max = 0.0
 
-        TS_O_min = 1.0
-        TS_O_max = 8.0
+#        TS_O_min = 1.0
+#        TS_O_max = 8.0
 
-        TS_C_min = -1.0
-        TS_C_max = 11.0
+#        TS_C_min = -1.0
+#        TS_C_max = 11.0
 
-        DVTLAM_S_min = 10.0
-        DVTLAM_S_max = 80.0
+#        DVTLAM_S_min = 10.0
+#        DVTLAM_S_max = 80.0
 
-        CVTLAM_S_min = 5.0
-        CVTLAM_S_max = 30.0
+#        CVTLAM_S_min = 5.0
+#        CVTLAM_S_max = 30.0
 
-        VTG_SPD_min = 0.0
-        VTG_SPD_max = 5.0
+#        VTG_SPD_min = 0.0
+#        VTG_SPD_max = 5.0
 
-        self.host.set_xbound(lower=xmin, upper=xmax)
-        self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
+#        self.host.set_xbound(lower=xmin, upper=xmax)
+#        self.host.set_ybound(lower=DPTM_D_min - 10.0, upper=DPTM_D_max)
 
-        self.par1.set_xbound(lower=xmin, upper=xmax)
-        self.par1.set_ybound(lower=TS_O_min, upper=TS_O_max)
+#       self.par1.set_xbound(lower=xmin, upper=xmax)
+#       self.par1.set_ybound(lower=TS_O_min, upper=TS_O_max)
 
-        self.par4.set_xbound(lower=xmin, upper=xmax)
-        self.par4.set_ybound(lower=TS_C_min, upper=TS_C_max)
+#        self.par4.set_xbound(lower=xmin, upper=xmax)
+#        self.par4.set_ybound(lower=TS_C_min, upper=TS_C_max)
 
-        self.par2.set_xbound(lower=xmin, upper=xmax)
-        self.par2.set_ybound(lower=DVTLAM_S_min, upper=DVTLAM_S_max)
+#        self.par2.set_xbound(lower=xmin, upper=xmax)
+#        self.par2.set_ybound(lower=DVTLAM_S_min, upper=DVTLAM_S_max)
 
-        self.par3.set_xbound(lower=xmin, upper=xmax)
-        self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
+#        self.par3.set_xbound(lower=xmin, upper=xmax)
+#        self.par3.set_ybound(lower=CVTLAM_S_min, upper=CVTLAM_S_max)
 
-        self.par5.set_xbound(lower=xmin, upper=xmax)
-        self.par5.set_ybound(lower=VTG_SPD_min, upper=VTG_SPD_max)
+#        self.par5.set_xbound(lower=xmin, upper=xmax)
+#        self.par5.set_ybound(lower=VTG_SPD_min, upper=VTG_SPD_max)
 
         # anecdote: axes.grid assumes b=True if any other flag is
         # given even if b is set to False.
@@ -922,30 +827,23 @@ class GraphFrame(wx.Frame):
 #            self.axes.grid(True, color='gray')
 #        else:
 #            self.axes.grid(False)
-        self.axes.grid(True, color='gray')
+#        self.axes.grid(True, color='gray')
 
         # no need to redraw if we are idling the data input
 #        if (self.GraphRun):
-        if (True):
+#        if (True):
             #            self.plot_Pres.set_xdata(np.arange(len(self.data["Pres"])))
-            self.plot_DPTM_D.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_DPTM_D.set_ydata(np.array(self.data.pdata["DPTM_D"]))
-            #            self.plot_Temp.set_xdata(np.arange(len(self.data["Temp"])))
 
-            self.plot_TS_O.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_TS_O.set_ydata(np.array(self.data.pdata["TS_O"]))
 
-            self.plot_TS_C.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_TS_C.set_ydata(np.array(self.data.pdata["TS_C"]))
+        self.axis_plot[0].set_xdata(np.array(self.data.pdata[self.data.x_axis["CHANNEL"]]))
+        self.axis_plot[0].set_ydata(np.array(self.data.pdata[self.data.host_axis["CHANNEL"]]))
 
-            self.plot_DVTLAM_S.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_DVTLAM_S.set_ydata(np.array(self.data.pdata["DVTLAM_S"]))
+        for i in range (1,6,1):
 
-            self.plot_CVTLAM_S.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_CVTLAM_S.set_ydata(np.array(self.data.pdata["CVTLAM_S"]))
+            self.axis_plot[i].set_xdata(np.array(self.data.pdata[self.data.x_axis["CHANNEL"]]))
+            self.axis_plot[i].set_ydata(np.array(self.data.pdata[self.data.p_axis[i]["CHANNEL"]]))
 
-            self.plot_VTG_SPD.set_xdata(np.array(self.data.pdata["ET"]))
-            self.plot_VTG_SPD.set_ydata(np.array(self.data.pdata["VTG_SPD"]))
+
 
             # if the ref line is changed
 #        self.plot_Ref.set_xdata(self.SlopeLineX)
@@ -957,21 +855,11 @@ class GraphFrame(wx.Frame):
     # *** END of draw_plot ********************88
     def erase_plot(self):
 
-        self.plot_DPTM_D.set_xdata(np.array([0.0]))
-        self.plot_DPTM_D.set_ydata(np.array([0.0]))
         #            self.plot_Temp.set_xdata(np.arange(len(self.data["Temp"])))
 
-        self.plot_TS_O.set_xdata(np.array([0.0]))
-        self.plot_TS_O.set_ydata(np.array([0.0]))
-
-        self.plot_TS_C.set_xdata(np.array([0.0]))
-        self.plot_TS_C.set_ydata(np.array([0.0]))
-
-        self.plot_DVTLAM_S.set_xdata(np.array([0.0]))
-        self.plot_DVTLAM_S.set_ydata(np.array([0.0]))
-
-        self.plot_CVTLAM_S.set_xdata(np.array([0.0]))
-        self.plot_CVTLAM_S.set_ydata(np.array([0.0]))
+        for i in range (0,6,1):
+            self.axis_plot[i].set_xdata(np.array([0.0]))
+            self.axis_plot[i].set_ydata(np.array([0.0]))
 
         self.canvas.draw()
 
@@ -1175,7 +1063,7 @@ class GraphFrame(wx.Frame):
             else:
                 Et = datetime.now() - self.status.StartTime
                 self.data.elapsed = str(timedelta(seconds=Et.seconds))
-                self.data.JDict["ET"] = timedelta(seconds=Et.seconds).total_seconds()
+                self.data.JDict["ET"] = timedelta(seconds=Et.seconds).total_seconds()/60.0
                 self.disp_text["ET-DIST"].Data_text["ET"].SetValue(str(timedelta(seconds=Et.seconds)))
                 self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["Long"]), float(self.data.JDict["Lat"]) )
                 self.data.JDict["Dist"] = self.data.dist
@@ -1184,14 +1072,17 @@ class GraphFrame(wx.Frame):
 
 # update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
             try:
-                self.data.pdata["DPTM_D"].append(-1. * float(self.data.JDict["DPTM_D"]["measurement_val"]))
+                self.data.pdata[self.data.x_axis["CHANNEL"]].append( float(self.data.JDict["ET"]))
+                self.data.pdata[self.data.host_axis["CHANNEL"]].append(-1. * float(self.data.JDict[self.data.host_axis["CHANNEL"]]["measurement_val"]))
+                for i in range (1,6,1):
+                    self.data.pdata[self.data.p_axis[i]["CHANNEL"]].append(float(self.data.JDict[self.data.p_axis[i]["CHANNEL"]]["measurement_val"])) # trawl opening
 
-                self.data.pdata["TS_O"].append(float(self.data.JDict["TS_O"]["measurement_val"])) # trawl opening
-                self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
-                self.data.pdata["DVTLAM_S"].append(float(self.data.JDict["DVTLAM_S"]["measurement_val"])) # door spead
-                self.data.pdata["CVTLAM_S"].append(float(self.data.JDict["CVTLAM_S"]["measurement_val"])) # wing stread
-                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
-                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
+#                self.data.pdata["TS_O"].append(float(self.data.JDict["TS_O"]["measurement_val"])) # trawl opening
+#                self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
+#                self.data.pdata["DVTLAM_S"].append(float(self.data.JDict["DVTLAM_S"]["measurement_val"])) # door spead
+#                self.data.pdata["CVTLAM_S"].append(float(self.data.JDict["CVTLAM_S"]["measurement_val"])) # wing stread
+#                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
+#                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
             except:
                 return
             self.draw_plot()
