@@ -361,7 +361,9 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
 #        JDict["VTG_TRACK"] = str(x.true_track)
         Sensor_Element = "VTG_SPD"
         disp_text[Sensor_Element].update_values(str(x.spd_over_grnd_kts), "X")
-        JDict[Sensor_Element] = str(x.spd_over_grnd_kts)
+#        JDict[Sensor_Element] = str(x.spd_over_grnd_kts)
+        JDict[Sensor_Element] = OrderedDict ([("measurement_val",str(x.spd_over_grnd_kts))])
+
 
         Sensor_Element = "VTG_COG"
         disp_text[Sensor_Element].update_values(str(x.true_track)+"\xb0", "X")
@@ -377,7 +379,7 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
 #        disp_text["GPSZDA"].Data_text["ZDA_TS"].SetValue(str(x.timestamp))
         Raw_String["ZDA"] = x
         Sensor_Element = "ZDA_TS"
-        disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
+#        disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
         JDict["ZDA_DATETIME"] = str(x.year).zfill(2) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(
             2) + ' ' + str(x.timestamp)
 
@@ -440,7 +442,7 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         'WST': process_wst
        }
 
-# called from scanmarlogger2
+# called from scanmarlogger3
     def dispatch_message(self,sentence_type, line_x ,disp_text,Raw_String,JDict):
             if sentence_type in self.GroupDict:
 

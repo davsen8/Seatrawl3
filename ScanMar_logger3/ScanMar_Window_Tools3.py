@@ -125,7 +125,8 @@ class RollingDialBox_multi(wx.Panel):
 
 
         def update_values(self,value,interp):
-            for i in range(4,0,-1):
+            size = len (self.Data_text) -1
+            for i in range(size,0,-1):
                 self.Data_text[str(i)].SetValue(self.Data_text[str(i-1)].GetValue())
                 self.Data_text[str(i)].SetForegroundColour(self.Data_text[str(i-1)].GetForegroundColour())
             self.Data_text["0"].SetValue(value)

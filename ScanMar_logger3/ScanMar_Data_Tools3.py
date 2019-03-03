@@ -58,6 +58,8 @@ class DataVars(object):
         self.JDict = OrderedDict()
         self.initialize_Jdict()
 
+        self.initialize_pdata()
+
         self.dataDir = "C:\ScanMar_data"
         self.TripDataDir = ""
 
@@ -73,6 +75,7 @@ class DataVars(object):
         self.JSONFileName = None
         self.CSVFileName = None
         self.MISIONFileName = None
+        self.PLOTFileName = None
 
         self.RAW_fp = None
         self.JSON_fp = None
@@ -83,7 +86,9 @@ class DataVars(object):
     #  to the end of the CSV records
     def initialize_Jdict(self):
 
-        self.JDict["DATETIME"] = ""
+        self.JDict["ZDA_DATETIME"] = ""
+        self.JDict["ET"] = ""
+        self.JDict["Dist"] = ""
         self.JDict["Lat"] = ""
         self.JDict["Long"] = ""
         self.JDict["LAT"] = ""
@@ -130,6 +135,43 @@ class DataVars(object):
 #       self.JDict['DVTLAM_D' = ""
 
 
+    def initialize_pdata(self):
+        # storage for the plot data
+        self.pdata = dict(DPTM_D=[0], ET=[0], TS_O=[0], DVTLAM_S=[0], CVTLAM_S=[0], TS_C=[0], VTG_SPD=[0])
+
+    def intial_plot_parms(self):
+
+    # host axis in the master main axis and owns the screen
+        self.host_axis = {"CHANNEL": "DPTM_D", "LABEL": "NET DEPTH (m)", "OFFSET": (0.3, 0.5),"SIDE":"left","COLOR": (1, 1, 0),
+                         "MIN": -600.0,"MAX": .0, "SHOW": True}
+
+    # xaxis is the time and is part of host_axis
+        self.x_axis = {"CHANNEL": "ET", "LABEL": "ELAPSED TIME (Minutes)", "OFFSET": (0.5, -0.06), "SIDE": "bottom",
+                  "COLOR": (0, 0, 0),"MIN": 0.0, "MAX": 30.0, "SHOW": True}
+
+    # aprasite axis paramters
+        self.p_axis = [i for i in range(6)]    # empty list to hold dictionaries of parasite axis paramters
+
+        self.p_axis[1] = {"CHANNEL":"TS_O","LABEL":"NET OPENING (m)","OFFSET":(10,0),"SIDE":"right","COLOR":(1, 0.5, 0),
+                         "MIN":1.0,"MAX":8.0,"SHOW":True}
+
+        self.p_axis[2] = {"CHANNEL":"DVTLAM_S","LABEL":"DOOR SPREAD (m)","OFFSET":(50,0),"SIDE":"right","COLOR":(1, 0.0, 0),
+                         "MIN":10.0,"MAX": 80.0, "SHOW": True}
+
+        self.p_axis[3] = {"CHANNEL":"CVTLAM_S","LABEL":"WING SPREAD (m)","OFFSET":(100,0),"SIDE":"right","COLOR":(0.3, 0.0, 0.3)
+            ,"MIN":5.0,"MAX": 30.0, "SHOW": True}
+
+        self.p_axis[4] = {"CHANNEL":"TS_C","LABEL":"NET CLEARANCE (m)","OFFSET":(-50,0),"SIDE":"left","COLOR":(0.2, 0.4, 0.4)
+            ,"MIN":-1.0,"MAX": 11.0, "SHOW": True}
+
+        self.p_axis[5] = {"CHANNEL":"VTG_SPD","LABEL":"VESSEL SPEED (Kn)","OFFSET":(-90,0),"SIDE":"left","COLOR":(0.2, 0.6, 0.2)
+            ,"MIN":0.0,"MAX": 5.0, "SHOW": True}
+
+
+
+
+
+
     def make_base_name(self):
         return (self.ShipTripSet["SHIP"] + '-' + self.ShipTripSet["YEAR"] + '-' + self.ShipTripSet["TRIP"] + '-' +
                 self.ShipTripSet["SET"])
@@ -152,10 +194,12 @@ class DataVars(object):
         if not os.path.exists(self.TripDataDir):
             os.makedirs(self.TripDataDir)
 
+
         self.CSVFileName = self.TripDataDir + "\\" + self.basename + ".csv"
         self.RAWFileName = self.TripDataDir + "\\" + self.basename + ".pnmea"
         self.JSONFileName = self.TripDataDir + "\\" + self.basename + ".json"
         self.MISIONFileName = self.TripDataDir + "\\" + self.basename[0:12] + ".log"
+        self.PLOTFileName = self.TripDataDir + "\\" + self.basename + ".png"
 
     def increment_tow(self):
         new = self.ShipTripSet["SET"]
@@ -179,12 +223,12 @@ class DataVars(object):
 
             #        if self.LoggerRun:
             if self.JDict["DPTM_D"] != '':
-                msg = self.basename + ", " + self.JDict["DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
                     "DBS"] + ", " + \
                       self.JDict["DPTM_D"]["measurement_val"] + ",  " + self.JDict["LAT"] + ", " + self.JDict["LON"]
             else:
 
-                msg = self.basename + ", " + self.JDict["DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
                     "DBS"] + ", " + \
                       "NULL" + ",  " + self.JDict["LAT"] + ", " + self.JDict["LON"]
 
@@ -203,7 +247,7 @@ class DataVars(object):
             if flag == "OUTWATER":
                 msg = msg + ',' + self.elapsed + ',' + '{:>7.3}'.format(self.dist)
 
-                msg = self.basename + ", " + self.JDict["DATETIME"] + ", " + "{:<10}".format(
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(
                     "TOWINFO") + ", DURATION= " + \
                       self.elapsed + ', DISTANCE= ' + '{:>7.3}'.format(self.dist) + ' Nm, WARP= ' + self.WarpOut + ' m'
                 self.parent.screen_log.AppendText('\n' + msg)
@@ -275,7 +319,7 @@ class DataVars(object):
                 self.CSV_fp= open(self.CSVFileName,"ab",0)
 
                 for ele, val in JDict.items():
-                    if ele == "DATETIME":
+                    if ele == "ZDA_DATETIME":
                         self.CSV_fp.write(str('{:>10}'.format('DATE') +','+ '{:>10}'.format('TIME')+',',).encode() )
                     elif ele == "LAT" or ele == "LON" :
                         self.CSV_fp.write(str('{:>10}'.format(ele+'_D')+','+'{:>10}'.format(ele+'_M')+',',).encode() )
@@ -293,7 +337,7 @@ class DataVars(object):
                         for k, v in val.items():
                             self.CSV_fp.write(str('{:>10}'.format(v) + ',',).encode() )
                     else:
-                        if ele == "DATETIME":
+                        if ele == "ZDA_DATETIME":
                             DT = val.split()
                             self.CSV_fp.write(str('{:>10}'.format(DT[0])+','+ '{:>10}'.format(DT[1])+',',).encode() )
                         elif  ele == "LAT"  or  ele == "LON":
