@@ -190,7 +190,7 @@ class Read_File_Stuff(threading.Thread):
                 for line in self.fp:
                     if not self.shutdown:
                         if "GLL" in line:
-                            time.sleep(1.0)   # emulate 1 second data bursts spaced on the GLL block String
+                            time.sleep(0.01)   # emulate 1 second data bursts spaced on the GLL block String
                         self.q.put(line)
 #                        time.sleep(0.01) # this is just to make the feed more readable and not blow through it
                     else:
@@ -276,6 +276,7 @@ class DataGen_que(threading.Thread):
 
 #                    print "YES MSG=",msg
 
+# rework some of the field codes to handle some sensor issues
                     self.scanner.process_message_new(msg)
                     x=self.scanner.current["SENSOR"]
 

@@ -88,9 +88,7 @@ class DataVars(object):
 
         self.JDict["ZDA_DATETIME"] = ""
         self.JDict["ET"] = ""
-        self.JDict["Dist"] = ""
-        self.JDict["Lat"] = ""
-        self.JDict["Long"] = ""
+        self.JDict["DIST"] = ""
         self.JDict["LAT"] = ""
         self.JDict["LON"] = ""
 
@@ -162,7 +160,7 @@ class DataVars(object):
             ,"MIN":5.0,"MAX": 30.0, "SHOW": True}
 
         self.p_axis[4] = {"CHANNEL":"TS_C","LABEL":"NET CLEARANCE (m)","OFFSET":(-50,0),"SIDE":"left","COLOR":(0.2, 0.4, 0.4)
-            ,"MIN":-1.0,"MAX": 11.0, "SHOW": True}
+            ,"MIN":-1.0,"MAX": 10.0, "SHOW": True}
 
         self.p_axis[5] = {"CHANNEL":"VTG_SPD","LABEL":"VESSEL SPEED (Kn)","OFFSET":(-90,0),"SIDE":"left","COLOR":(0.2, 0.6, 0.2)
             ,"MIN":0.0,"MAX": 5.0, "SHOW": True}
@@ -177,8 +175,8 @@ class DataVars(object):
                 self.ShipTripSet["SET"])
 
     def make_SYTS(self, abasename):
-        self.ShipTripSet["SHIP"], self.ShipTripSet["YEAR"], self.ShipTripSet["TRIP"], self.ShipTripSet[
-            "SET"] = abasename.split('-')
+        self.ShipTripSet["SHIP"], self.ShipTripSet["YEAR"], self.ShipTripSet["TRIP"],\
+            self.ShipTripSet["SET"] = abasename.split('-')
 
     def set_FileNames(self):
             #        self.basename = self.make_base_name()

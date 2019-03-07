@@ -459,7 +459,7 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
                 print ("missing key, not in GroupDict=", sentence_type)
 #                current['OK'] = False
 
-# called from scanmar serial tools
+# called from nextblock in scanmar serial tools ; to fix some channel coding issues wrt legacy sensors
     def process_message_new(self, msg):
         self.current = dict()
         if isinstance(msg, SCM):

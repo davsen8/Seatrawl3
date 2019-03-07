@@ -52,7 +52,7 @@ ID_START_ARC = wx.NewId()
 ID_STOP_ARC = wx.NewId()
 ID_SER_CONF = wx.NewId()
 
-VERSION = "V3.00 Feb 28 2019"
+VERSION = "V3.01 March 7 2019"
 TITLE = "ScanMar_Logger3"
 
 
@@ -121,7 +121,8 @@ class GraphFrame(wx.Frame):
 
         self.data.set_FileNames()
 
-        self.disp_BaseName.Data_text.SetValue(str(self.data.basename))
+#        self.disp_BaseName.Data_text.SetValue(str(self.data.basename))
+        self.set_plot_title()
 
         # the redraw timer is used to add new data to the plot and update any changes via
         # the on_redraw_timer method
@@ -146,6 +147,8 @@ class GraphFrame(wx.Frame):
 #        self.fig.patch.set_facecolor("lightgray")
         self.canvas = FigCanvas(self.panel, -1, self.fig)
 
+        self.set_plot_title()
+
     # ***********************************************************
     # *********** Setup MatPlotLib graph of data ****************
     def init_plot(self):
@@ -154,11 +157,13 @@ class GraphFrame(wx.Frame):
         self.fig.patch.set_facecolor("lightgray")
 
 
+
+
 # plot 0 is host 1-5 are parasites
         self.p_axis_list = [i for i in range(6)]    # empty list to hold dictionaries of parasite axis objects
         self.axis_plot = [i for i in range(6)]    # empty list to hold plots (o will be used for host
 
-        self.host = HostAxes(self.fig, [0.15, 0.1, 0.65, 0.8])
+        self.host = HostAxes(self.fig, [0.15, 0.12, 0.65, 0.8])
         # create paarsite axis on host axis; sharing common x parameter
         for i in range (1,6,1):
             self.p_axis_list[i] = ParasiteAxes(self.host, sharex=self.host)
@@ -577,26 +582,29 @@ class GraphFrame(wx.Frame):
         #        self.hbox4.Add(self.disp_text4["TS"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         # TIME DATE
-        hbox[6] = wx.BoxSizer(wx.HORIZONTAL)
+
 
 #        zone = time.tzname[time.daylight]
 
-        self.hbox6a = wx.BoxSizer(wx.HORIZONTAL)
-        disp_text6a = OrderedDict([("TIMEDATE", '')])
-        xxw = OrderedDict([("DATE", '00-00-00'), ("TIME", '00:00:00')])
+#        self.hbox6a = wx.BoxSizer(wx.HORIZONTAL)
+#        disp_text6a = OrderedDict([("TIMEDATE", '')])
+#        xxw = OrderedDict([("DATE", '00-00-00'), ("TIME", '00:00:00')])
 
-        disp_text6a["TIMEDATE"] = RollingDialBox_multi(apanel, -1, "PC TIME", xxw, '-', 155,
-                                                            wx.BLACK, wx.HORIZONTAL, afontmiddle)
-        hbox[6].Add(disp_text6a["TIMEDATE"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
-
-        disp_text6 = OrderedDict([ ("ET-DIST", '')])
-        xxw = OrderedDict([("ET", '00:00:00'),("DIST","00.000")])
-        disp_text6["ET-DIST"] = RollingDialBox_multi(apanel, -1, "ET-DIST (Nm)",xxw, '0',160,
-                                                     wx.RED,wx.HORIZONTAL,afontbigger)
+#        disp_text6a["TIMEDATE"] = RollingDialBox_multi(apanel, -1, "PC TIME", xxw, '-', 155,
+#                                                            wx.BLACK, wx.HORIZONTAL, afontmiddle)
+#        hbox[6].Add(disp_text6a["TIMEDATE"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         #ET-DIST
-        hbox[7] = wx.BoxSizer(wx.HORIZONTAL)
-        hbox[7].Add(disp_text6["ET-DIST"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        hbox[6] = wx.BoxSizer(wx.HORIZONTAL)
+        disp_text6 = OrderedDict([ ("ET", ''), ("DIST", '')])
+
+        x2 = OrderedDict([("ET", 'ElapseTime'), ("DIST", 'Dist (Nm)')])
+#        xxw = OrderedDict([('00:00:00'),("00.000")])
+        for x in disp_text6:
+            disp_text6[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '00.00', 160, wx.BLACK, wx.VERTICAL, afontbigger)
+                #        self.hbox3.Add(self.disp_label3, border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
+        for x in disp_text6:
+            hbox[6].Add(disp_text6[x], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         self.disp_label2= RollingDialBox_multi_static(apanel, -1,"---- Log ----", timelabel, '-',80,wx.BLUE,
                                                       wx.VERTICAL,afontsize)
@@ -626,8 +634,8 @@ class GraphFrame(wx.Frame):
         hbox[11].Add(disp_text11["DBS"], border=5, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL)
 
         # STATION ID
-        self.disp_BaseName = RollingDialBox(apanel, -1, "-- Ship ----- Year ------ Trip ---- Set -- ",
-                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle)
+#        self.disp_BaseName = RollingDialBox(apanel, -1, "-- Ship ----- Year ------ Trip ---- Set -- ",
+#                                            "XXX-2018-000-000", 220,"FOREST GREEN",wx.HORIZONTAL,afontmiddle)
 
 #        print self.BaseName
 
@@ -639,7 +647,6 @@ class GraphFrame(wx.Frame):
         self.disp_text.update(disp_text5)
         self.disp_text.update(disp_text6)
         self.disp_text.update(disp_text8)
-        self.disp_text.update(disp_text6a)
         self.disp_text.update(disp_text11)
 
     # Put it all together
@@ -647,16 +654,16 @@ class GraphFrame(wx.Frame):
         self.DWbox = wx.StaticBoxSizer(DWSBx, wx.HORIZONTAL)
         self.DWbox.Add(hbox[1], 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
-        InfoBx = wx.StaticBox(apanel,-1,"INFO")
+#        InfoBx = wx.StaticBox(apanel,-1,"INFO")
 #        self.Infobox = wx.StaticBoxSizer(InfoBx, wx.HORIZONTAL)
-        self.Infobox = wx.BoxSizer( wx.HORIZONTAL)
-        self.Infobox.Add(hbox[6], 0, flag=wx.ALIGN_LEFT | wx.TOP)
-        self.Infobox.Add(self.disp_BaseName, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+#        self.Infobox = wx.BoxSizer( wx.HORIZONTAL)
+#        self.Infobox.Add(hbox[6], 0, flag=wx.ALIGN_LEFT | wx.TOP)
+#        self.Infobox.Add(self.disp_BaseName, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
 #        EtDistBx = wx.StaticBox(apanel,-1,"EtDist")
 #        self.EtDistbox = wx.StaticBoxSizer(EtDistBx, wx.HORIZONTAL)
 #        self.EtDistbox.Add(hbox[7], 0, flag=wx.ALIGN_LEFT | wx.TOP)
-        self.EtDistbox = hbox[7]
+#        self.EtDistbox = hbox[7]
 
         TLTbx = wx.StaticBox(apanel,-1,"Tilt Sensor")
         self.TLTbox = wx.StaticBoxSizer(TLTbx, wx.HORIZONTAL)
@@ -681,6 +688,11 @@ class GraphFrame(wx.Frame):
         GPSbx = wx.StaticBox(apanel,-1,"GPS")
         self.GPSbox = wx.StaticBoxSizer(GPSbx, wx.HORIZONTAL)
         self.GPSbox.Add(hbox[8], 0, flag=wx.ALIGN_LEFT | wx.TOP)
+
+        EtDistbx = wx.StaticBox(apanel,-1,"Tow Time-Distance")
+        self.EtDistbox = wx.StaticBoxSizer(EtDistbx, wx.HORIZONTAL)
+        self.EtDistbox.Add(hbox[6], 0, flag=wx.ALIGN_LEFT | wx.TOP)
+
 
     def assemble_display(self,apanel):
 
@@ -713,7 +725,7 @@ class GraphFrame(wx.Frame):
         vbox.Add(self.ELbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)   # events log
         vbox.Add(LRbox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
         vbox.Add(LRbox2, 0, flag=wx.ALIGN_LEFT | wx.TOP)
-        vbox.Add(self.Infobox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
+#        vbox.Add(self.Infobox, 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
 
         apanel.SetSizer(vbox)
@@ -726,17 +738,21 @@ class GraphFrame(wx.Frame):
 # ###### END OF DISPLAY SET-UP ###############
         #############################################
 
+    def set_plot_title(self):
+        self.fig.suptitle(self.data.basename, fontsize=12)
+        self.canvas.draw()
+
     def draw_plot(self):
         """ Redraws the plot
         """
-
-        self.fig.suptitle(self.data.basename, fontsize=12)
 
         # when xmin is on auto, it "follows" xmax to produce a
         # sliding window effect. therefore, xmin is assigned after
         # xmax.
         #
 #        if self.xmax_control.is_auto():
+        self.set_plot_title()
+
         xmax = len(self.data.pdata["ET"]) if len(self.data.pdata["ET"]) > 1800 else 1800
 #        else:
 #            xmax = int(self.xmax_control.manual_value())
@@ -1010,10 +1026,10 @@ class GraphFrame(wx.Frame):
 
     # working variables with no persistence outside this routine or across calls to it
         Raw_String = OrderedDict()
-        dty =  time.strftime('%Y-%m-%d')
-        dtt= time.strftime('%H:%M:%S')
-        self.disp_text["TIMEDATE"].Data_text["DATE"].SetValue(str(dty))
-        self.disp_text["TIMEDATE"].Data_text["TIME"].SetValue(str(dtt))
+#        dty =  time.strftime('%Y-%m-%d')
+#        dtt= time.strftime('%H:%M:%S')
+#        self.disp_text["TIMEDATE"].Data_text["DATE"].SetValue(str(dty))
+#        self.disp_text["TIMEDATE"].Data_text["TIME"].SetValue(str(dtt))
         ET = 0
 
         # If a data source has not been defined do nothing on this pass
@@ -1064,10 +1080,10 @@ class GraphFrame(wx.Frame):
                 Et = datetime.now() - self.status.StartTime
                 self.data.elapsed = str(timedelta(seconds=Et.seconds))
                 self.data.JDict["ET"] = timedelta(seconds=Et.seconds).total_seconds()/60.0
-                self.disp_text["ET-DIST"].Data_text["ET"].SetValue(str(timedelta(seconds=Et.seconds)))
+                self.disp_text["ET"].update_values(str(timedelta(seconds=Et.seconds)),'X')
                 self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["Long"]), float(self.data.JDict["Lat"]) )
-                self.data.JDict["Dist"] = self.data.dist
-                self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('{:>7.3}'.format(self.data.dist))
+                self.data.JDict["DIST"] = self.data.dist
+                self.disp_text["DIST"].update_values('{:>7.3}'.format(self.data.dist),'X')
 
 
 # update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
@@ -1084,6 +1100,7 @@ class GraphFrame(wx.Frame):
 #                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
 #                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
             except:
+                print ("exception")
                 return
             self.draw_plot()
 
@@ -1144,8 +1161,8 @@ class GraphFrame(wx.Frame):
         self.BottomEnd_button.Enable(False)
         self.LoggerEnd_button.Enable(False)
         self.Abort_button.Enable(False)
-        self.disp_text["ET-DIST"].Data_text["ET"].SetValue('00:00:00')
-        self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('0000.0')
+        self.disp_text["ET"].update_values('00:00:00','X')
+        self.disp_text["DIST"].update_values('0000.0','X')
         pass
 
     # Configure serial port, requires our serial instance, make sure port is closed before calling
@@ -1255,14 +1272,15 @@ class GraphFrame(wx.Frame):
             self.data.save_cfg(self.ser)
             self.data.close_files("ALL")
             self.data.set_FileNames()
-            self.disp_BaseName.Data_text.SetValue(str(self.data.basename))
-
+#            self.disp_BaseName.Data_text.SetValue(str(self.data.basename))
+            self.set_plot_title()
         self.data.basename = self.data.make_base_name()
         self.data.WarpOut = '0'
 
-        self.disp_BaseName.Data_text.SetValue(self.data.basename)
-        self.disp_text["ET-DIST"].Data_text["ET"].SetValue('00:00:00')
-        self.disp_text["ET-DIST"].Data_text["DIST"].SetValue('0000.0')
+        self.set_plot_title()
+#        self.disp_BaseName.Data_text.SetValue(self.data.basename)
+        self.disp_text["ET"].update_values('00:00:00','X')
+        self.disp_text["DIST"].update_values('0000.0','X')
         self.Warp_text.SetValue('')
         self.erase_plot()
         self.data.initialize_pdata()
@@ -1283,6 +1301,7 @@ class GraphFrame(wx.Frame):
 
             self.setup_new_tow()
             xx.Destroy()
+            self.set_plot_title()
 
     def on_edit_head(self,event):
         if self.status.RT_source == True:
