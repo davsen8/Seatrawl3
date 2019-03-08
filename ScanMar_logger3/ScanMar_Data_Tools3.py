@@ -53,11 +53,11 @@ class DataVars(object):
         self.initialize_vars()
         self.parent = parent
         self.status = status_vars
+
     def initialize_vars(self):
 
-        self.JDict = OrderedDict()
         self.initialize_Jdict()
-
+        self.initialize_display_list()
         self.initialize_pdata()
 
         self.dataDir = "C:\ScanMar_data"
@@ -70,6 +70,7 @@ class DataVars(object):
         self.WarpOut = '0'
         self.dist = 0.0
         self.elapsed = ""
+        self.dist = 0.0
 
         self.RAWFileName = None
         self.JSONFileName = None
@@ -85,39 +86,52 @@ class DataVars(object):
     # JDICT valeues go into the csv file irregardlesss of if present; fields not in JDICT taht are found get appended
     #  to the end of the CSV records
     def initialize_Jdict(self):
+#   =OrderedDict ([("measurement_val","-"),("QF",'-'),("STATUS",'-') ])
 
+        self.JDict = OrderedDict()
         self.JDict["ZDA_DATETIME"] = ""
-        self.JDict["ET"] = ""
+        self.JDict["ET_BTM"] = ""
         self.JDict["DIST"] = ""
-        self.JDict["LAT"] = ""
-        self.JDict["LON"] = ""
-
+        self.JDict["GPS_TIME"] = ""
+        self.JDict["ZDA_TS"] = ""
+        self.JDict["ZDA_DATETIME"] = ""
+        self.JDict["LAT_DM"] = ""
+        self.JDict["LON_DM"] = ""
+        self.JDict["LAT_deci"] = ""
+        self.JDict["LON_deci"] = ""
         self.JDict["VTG_SPD"] = ""
         self.JDict["VTG_COG"] = ""
         self.JDict["DBS"] = ""
 
         self.JDict['DVTLAM_P'] = ""
         self.JDict['DVTLAM_R'] = ""
+        self.JDict['DVTLAM_S'] = ""
         self.JDict['DVTLAM_A'] = ""
         self.JDict['DVTLAM_B'] = ""
-        self.JDict['DVTLAM_S'] = ""
+
         self.JDict['DVTLAS_P'] = ""
         self.JDict['DVTLAS_R'] = ""
         self.JDict['DVTLAS_A'] = ""
         self.JDict['DVTLAS_B'] = ""
+
         self.JDict['CVTLAM_S'] = ""
+
         self.JDict['TSP_X'] = ""
         self.JDict['TSP_Y'] = ""
+
         self.JDict['TLT_P'] = ""
         self.JDict['TLT_R'] = ""
         self.JDict['TLT_A'] = ""
         self.JDict['TLT_B'] = ""
+
         self.JDict['TS_H'] = ""
         self.JDict['TS_C'] = ""
         self.JDict['TS_O'] = ""
         self.JDict['TS_F'] = ""
+
         self.JDict['DPTM_D'] = ""   # Mapped DT to this one in the nmea parser for simplicity
         self.JDict['DPTM_T'] = ""   # BIO has this one
+
         self.JDict['WLPS'] = ""
         self.JDict['WLPO'] = ""
         self.JDict['WLSS'] = ""
@@ -125,6 +139,11 @@ class DataVars(object):
         self.JDict['WTP'] = ""
         self.JDict['WTS'] = ""
         self.JDict['WST'] = ""
+        for x in self.JDict:
+                self.JDict[x] = OrderedDict ([("measurement_val",'-'),("QF",'-'),("STATUS",'-') ])
+
+
+#        print(self.JDict["DPTM_T"]["measurement_val"])
 
 # BIO Channels,  if preset they will auto add to the end of the Jdict
 #       self.JDict['DPTM_D'] = ""
@@ -132,10 +151,17 @@ class DataVars(object):
 #       self.JDict'DVTLAS_T'] = ""
 #       self.JDict['DVTLAM_D' = ""
 
+    def initialize_present_list(self):
+        self.present_list = list()
+
+    def initialize_display_list(self):
+        self.disp_list = ["LAT_DM","LON_DM","GPS_TIME","DVTLAM_P","DVTLAM_R","DVTLAM_S","DVTLAS_P","DVTLAS_R",
+                          "CVTLAM_S","TSP_X","TSP_Y","TLT_P","TLT_R","TS_H","TS_O","TS_C","DPTM_D","DPTM_T",
+                          "VTG_COG","VTG_SPD","DBS","ET_BTM","DIST"]
 
     def initialize_pdata(self):
         # storage for the plot data
-        self.pdata = dict(DPTM_D=[0], ET=[0], TS_O=[0], DVTLAM_S=[0], CVTLAM_S=[0], TS_C=[0], VTG_SPD=[0])
+        self.pdata = dict(DPTM_D=[0], ET_BTM=[0], TS_O=[0], DVTLAM_S=[0], CVTLAM_S=[0], TS_C=[0], VTG_SPD=[0])
 
     def intial_plot_parms(self):
 
@@ -144,7 +170,7 @@ class DataVars(object):
                          "MIN": -600.0,"MAX": .0, "SHOW": True}
 
     # xaxis is the time and is part of host_axis
-        self.x_axis = {"CHANNEL": "ET", "LABEL": "ELAPSED TIME (Minutes)", "OFFSET": (0.5, -0.06), "SIDE": "bottom",
+        self.x_axis = {"CHANNEL": "ET_BTM", "LABEL": "ELAPSED TIME (Minutes)", "OFFSET": (0.5, -0.06), "SIDE": "bottom",
                   "COLOR": (0, 0, 0),"MIN": 0.0, "MAX": 30.0, "SHOW": True}
 
     # aprasite axis paramters
@@ -220,18 +246,18 @@ class DataVars(object):
             dt = time.strftime('%Y-%m-%dT%H:%M:%S')
 
             #        if self.LoggerRun:
-            if self.JDict["DPTM_D"] != '':
-                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
-                    "DBS"] + ", " + \
-                      self.JDict["DPTM_D"]["measurement_val"] + ",  " + self.JDict["LAT"] + ", " + self.JDict["LON"]
+            if self.JDict["DPTM_D"]["measurement_val"] != '-':
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"]["measurement_val"] + ", " + "{:<10}".format(flag)\
+                      + ", " + self.JDict["DBS"]["measurement_val"]+ ", " + self.JDict["DPTM_D"]["measurement_val"] + \
+                      ",  " + self.JDict["LAT_DM"]["measurement_val"] + ", " + self.JDict["LON_DM"]["measurement_val"]
             else:
 
-                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(flag) + ", " + self.JDict[
-                    "DBS"] + ", " + \
-                      "NULL" + ",  " + self.JDict["LAT"] + ", " + self.JDict["LON"]
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"]["measurement_val"] + ", " + "{:<10}".format(flag) + ", " + \
+                      self.JDict["DBS"]["measurement_val"] + ", " + \
+                      "NULL" + ",  " + self.JDict["LAT_DM"]["measurement_val"] + ", " + self.JDict["LON_DM"]["measurement_val"]
 
             if flag == "WARPENTER":
-                msg = msg + ', WARP= ' + self.WarpOut + ' m'
+                msg = msg + ', WARP=' + self.WarpOut + ' m'
 
             screen_msg = msg
 #            self.screen_log.AppendText('\n' + msg)
@@ -245,9 +271,9 @@ class DataVars(object):
             if flag == "OUTWATER":
                 msg = msg + ',' + self.elapsed + ',' + '{:>7.3}'.format(self.dist)
 
-                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"] + ", " + "{:<10}".format(
-                    "TOWINFO") + ", DURATION= " + \
-                      self.elapsed + ', DISTANCE= ' + '{:>7.3}'.format(self.dist) + ' Nm, WARP= ' + self.WarpOut + ' m'
+                msg = self.basename + ", " + self.JDict["ZDA_DATETIME"]["measurement_val"] + ", " +\
+                                "{:<10}".format("TOWINFO") + ", DURATION= " + \
+                      self.elapsed + ', DISTANCE= ' + '{:>7.3}'.format(self.dist) + ' Nm, WARP= ' + self.WarpOut +' m'
                 self.parent.screen_log.AppendText('\n' + msg)
                 log_msg = dt + ", " + msg
                 if self.status.RT_source:  # dont write to files if in archive playback mode
@@ -319,7 +345,7 @@ class DataVars(object):
                 for ele, val in JDict.items():
                     if ele == "ZDA_DATETIME":
                         self.CSV_fp.write(str('{:>10}'.format('DATE') +','+ '{:>10}'.format('TIME')+',',).encode() )
-                    elif ele == "LAT" or ele == "LON" :
+                    elif ele == "LAT_DM" or ele == "LON_DM" :
                         self.CSV_fp.write(str('{:>10}'.format(ele+'_D')+','+'{:>10}'.format(ele+'_M')+',',).encode() )
                     else:
                         self.CSV_fp.write(str('{:>10}'.format(ele) + ',',).encode())
@@ -331,18 +357,19 @@ class DataVars(object):
                     flag = '{:>10}'.format("OnBottom")
             else:
                 for ele, val in JDict.items():
-                    if isinstance(val, dict):
+ #                   if isinstance(val, dict):
+                    if ele not in ["ZDA_DATATIME","LAT_DM","LON_DM"] :
                         for k, v in val.items():
                             self.CSV_fp.write(str('{:>10}'.format(v) + ',',).encode() )
                     else:
                         if ele == "ZDA_DATETIME":
-                            DT = val.split()
+                            DT = val["measurement_val"].split()
                             self.CSV_fp.write(str('{:>10}'.format(DT[0])+','+ '{:>10}'.format(DT[1])+',',).encode() )
-                        elif  ele == "LAT"  or  ele == "LON":
-                                L = val.split()
+                        elif  ele == "LAT_DM"  or  ele == "LON_DM":
+                                L = val["measurement_val"].split()
                                 self.CSV_fp.write(str('{:>10}'.format(L[0]) + ',' + '{:>10}'.format(L[1]) + ',',).encode() )
                         else:
-                            self.CSV_fp.write(str('{:>10}'.format(val) + ',',).encode() )
+                            self.CSV_fp.write(str('{:>10}'.format(val["measurement_val"]) + ',',).encode() )
                 flag = '{:>10}'.format('B') if self.status.OnBottom else '{:>10}'.format('W')
 
             self.CSV_fp.write(str(flag+'\n').encode())
