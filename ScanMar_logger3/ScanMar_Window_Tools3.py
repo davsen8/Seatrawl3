@@ -129,7 +129,7 @@ class RollingDialBox_multi(wx.Panel):
             for i in range(size,0,-1):
                 self.Data_text[str(i)].SetValue(self.Data_text[str(i-1)].GetValue())
                 self.Data_text[str(i)].SetForegroundColour(self.Data_text[str(i-1)].GetForegroundColour())
-            self.Data_text["0"].SetValue(value)
+            self.Data_text["0"].SetValue(str(value))
             if interp == "A" :   # else a V for interpolated or eched
                 self.Data_text["0"].SetForegroundColour(wx.RED)
             else:

@@ -596,9 +596,9 @@ class GraphFrame(wx.Frame):
 
         #ET-DIST
         hbox[6] = wx.BoxSizer(wx.HORIZONTAL)
-        disp_text6 = OrderedDict([ ("ET", ''), ("DIST", '')])
+        disp_text6 = OrderedDict([ ("ET_BTM", ''), ("DIST", '')])
 
-        x2 = OrderedDict([("ET", 'ElapseTime'), ("DIST", 'Dist (Nm)')])
+        x2 = OrderedDict([("ET_BTM", 'ElapseTime'), ("DIST", 'Dist (Nm)')])
 #        xxw = OrderedDict([('00:00:00'),("00.000")])
         for x in disp_text6:
             disp_text6[x] = RollingDialBox_multi(apanel, -1, x2[x], xx, '00.00', 160, wx.BLACK, wx.VERTICAL, afontbigger)
@@ -612,10 +612,10 @@ class GraphFrame(wx.Frame):
         # GPS DATA
         hbox[8] = wx.BoxSizer(wx.HORIZONTAL)
 
-        disp_text8 = OrderedDict([("GLL_TS",''),("LAT",''),("LON",''),("VTG_COG",''),("VTG_SPD",'')])
-        disp_text8_size = OrderedDict([("GLL_TS",70),("LAT",90),("LON",100),("VTG_COG",60),("VTG_SPD",60)])
+        disp_text8 = OrderedDict([("GPS_TIME",''),("LAT_DM",''),("LON_DM",''),("VTG_COG",''),("VTG_SPD",'')])
+        disp_text8_size = OrderedDict([("GPS_TIME",70),("LAT_DM",90),("LON_DM",100),("VTG_COG",60),("VTG_SPD",60)])
 
-        x2 = OrderedDict([("GLL_TS",'Time (GPS)'),("LAT", 'Latitude'), ("LON", 'Longitude'),("VTG_COG","COG"), ("VTG_SPD", 'Speed (kn)')])
+        x2 = OrderedDict([("GPS_TIME",'GMT (GPS)'),("LAT_DM", 'Latitude'), ("LON_DM", 'Longitude'),("VTG_COG","COG"), ("VTG_SPD", 'Speed (kn)')])
 
         # build the data boxes,,  access as disp_text["DVTLAM"].Data_text["R"].SetValue(xxxx)
         for x in disp_text8:
@@ -753,7 +753,7 @@ class GraphFrame(wx.Frame):
 #        if self.xmax_control.is_auto():
         self.set_plot_title()
 
-        xmax = len(self.data.pdata["ET"]) if len(self.data.pdata["ET"]) > 1800 else 1800
+        xmax = self.data.pdata["ET_BTM"][len(self.data.pdata["ET_BTM"])-1] if self.data.pdata["ET_BTM"][len(self.data.pdata["ET_BTM"])-1] > 1800 else 1800
 #        else:
 #            xmax = int(self.xmax_control.manual_value())
 
@@ -1016,7 +1016,30 @@ class GraphFrame(wx.Frame):
 #        print ("F4 hit",event)
 
 # ########### -----------------------------------
-            
+    def display_values (self):
+
+        for Sensor in self.data.disp_list :   #  dont display everything that might be feed
+#            print ("sensor= ",Sensor)
+            if Sensor in self.data.JDict:
+                if Sensor == "LAT_DM":
+                    lat= self.data.JDict[Sensor]["measurement_val"]
+                    gps_lat_string = str(lat[:2] + "\xb0" + " " + '{:>6.6}'.format(lat[2:8]) + "\' " + lat[9:])
+                    self.disp_text[Sensor].update_values(gps_lat_string, "X")
+                elif Sensor == "LON_DM":
+                    lon = self.data.JDict[Sensor]["measurement_val"]
+                    gps_lon_string = str(lon[:3] + "\xb0" + " " + '{:>6.6}'.format(lon[3:8]) + "\' " + lon[9:])
+                    self.disp_text[Sensor].update_values(gps_lon_string, "X")
+                elif Sensor == "VTG_COG":
+                    x= self.data.JDict[Sensor]["measurement_val"]
+                    self.disp_text[Sensor].update_values(str(x) + "\xb0", "X")   # with ° symbol
+                elif Sensor == "GPS_TIME":
+                    self.disp_text[Sensor].update_values(self.data.JDict[Sensor]["measurement_val"],
+                                                 self.data.JDict[Sensor]["STATUS"])
+                else:
+                    self.disp_text[Sensor].update_values(self.data.JDict[Sensor]["measurement_val"],
+                                                 self.data.JDict[Sensor]["STATUS"])
+
+
 ################### ON_REDRAW_TIMER ##########################################################
 # This method is repeatably called by the re-draw timer to get any new data
 # what it does depends on the STATE variables
@@ -1053,10 +1076,12 @@ class GraphFrame(wx.Frame):
         if block["OK"]:
             for sentence_type in block:
                 if sentence_type != "OK" and sentence_type != "REASON":  # skip these house keepers flag dict elements
-                    self.smn_tools.dispatch_message(sentence_type, block[sentence_type], self.disp_text, Raw_String,
+                    self.smn_tools.dispatch_message(sentence_type, block[sentence_type], Raw_String,
                                                     self.data.JDict)
+#                    print ("calling display "+self.data.JDict["LAT_DM"]["measurement_val"])
                 else:
                     pass
+            self.display_values()
         else:
             if block["REASON"] == "FINISHED":
                 self.flash_status_message("DATA SOURCE SIGNALLED FINISHED")
@@ -1070,28 +1095,33 @@ class GraphFrame(wx.Frame):
         if self.status.OnBottom:
             if self.status.StartTime == 0:
                 self.status.StartTime = datetime.now()
-                self.slat = float(self.data.JDict["Lat"])
-                self.slon = float(self.data.JDict["Long"])
-                ET = 0
-                self.data.JDict["ET"] = 0.0
+                self.slat = float(self.data.JDict["LAT_deci"]['measurement_val'])   # for the distance calcualtion
+                self.slon = float(self.data.JDict["LON_deci"]['measurement_val'])
+                et = 0
+                self.data.JDict["ET_BTM"]['measurement_val'] = 0.0
                 self.data.dist  = 0.0
                 self.data.elapsed = ""
             else:
                 Et = datetime.now() - self.status.StartTime
                 self.data.elapsed = str(timedelta(seconds=Et.seconds))
-                self.data.JDict["ET"] = timedelta(seconds=Et.seconds).total_seconds()/60.0
-                self.disp_text["ET"].update_values(str(timedelta(seconds=Et.seconds)),'X')
-                self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["Long"]), float(self.data.JDict["Lat"]) )
-                self.data.JDict["DIST"] = self.data.dist
+                et = timedelta(seconds=Et.seconds).total_seconds()/60.0
+#                self.data.JDict["ET"] = OrderedDict([("measurement_val", et), ("QF",'-'), ("STATUS",'-')])
+                self.disp_text["ET_BTM"].update_values(str(timedelta(seconds=Et.seconds)),'X')
+#                self.disp_text["ET_BTM"].update_values(str(et),'X')
+                self.data.dist  = self.data.haversine (self.slon, self.slat, float(self.data.JDict["LON_deci"]['measurement_val']),
+                                             float(self.data.JDict["LAT_deci"]['measurement_val']) )
+
+#                self.data.JDict["DIST"] = OrderedDict([("measurement_val", '{:>7.3}'.format(self.data.dist)), ("QF", '-'), ("STATUS", '-')])
                 self.disp_text["DIST"].update_values('{:>7.3}'.format(self.data.dist),'X')
 
 
 # update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
             try:
-                self.data.pdata[self.data.x_axis["CHANNEL"]].append( float(self.data.JDict["ET"]))
+#                self.data.pdata[self.data.x_axis["CHANNEL"]].append( float(self.data.JDict["ET_BTM"]['measurement_val']))
+                self.data.pdata[self.data.x_axis["CHANNEL"]].append(et)
                 self.data.pdata[self.data.host_axis["CHANNEL"]].append(-1. * float(self.data.JDict[self.data.host_axis["CHANNEL"]]["measurement_val"]))
                 for i in range (1,6,1):
-                    self.data.pdata[self.data.p_axis[i]["CHANNEL"]].append(float(self.data.JDict[self.data.p_axis[i]["CHANNEL"]]["measurement_val"])) # trawl opening
+                    self.data.pdata[self.data.p_axis[i]["CHANNEL"]].append(float(self.data.JDict[self.data.p_axis[i]["CHANNEL"]]["measurement_val"]))
 
 #                self.data.pdata["TS_O"].append(float(self.data.JDict["TS_O"]["measurement_val"])) # trawl opening
 #                self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
@@ -1100,9 +1130,11 @@ class GraphFrame(wx.Frame):
 #                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
 #                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
             except:
-                print ("exception")
+                print ("plot exception")
                 return
+
             self.draw_plot()
+
 
 # update the logfile(s)
         if self.status.LoggerRun:
@@ -1161,7 +1193,7 @@ class GraphFrame(wx.Frame):
         self.BottomEnd_button.Enable(False)
         self.LoggerEnd_button.Enable(False)
         self.Abort_button.Enable(False)
-        self.disp_text["ET"].update_values('00:00:00','X')
+        self.disp_text["ET_BTM"].update_values('00:00:00','X')
         self.disp_text["DIST"].update_values('0000.0','X')
         pass
 
@@ -1279,7 +1311,7 @@ class GraphFrame(wx.Frame):
 
         self.set_plot_title()
 #        self.disp_BaseName.Data_text.SetValue(self.data.basename)
-        self.disp_text["ET"].update_values('00:00:00','X')
+        self.disp_text["ET_BTM"].update_values('00:00:00','X')
         self.disp_text["DIST"].update_values('0000.0','X')
         self.Warp_text.SetValue('')
         self.erase_plot()
