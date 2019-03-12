@@ -300,126 +300,85 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
         'TS_O': "",
 #        'TS_F': "",
         'DP_H': "",
-        'DPTM_D': "",   #BIO
+        'DPTM_D': "",   #BIO use inplace of single d only nafc has DP see process_message_new
         'DPTM_T': "",   #BIO
         'DVTLAS_T': "", #BIO
         'DVTLAM_D': "", #BIO
     }
-    def process_sm2(self,y,disp_text,Raw_String,JDict):
-
-#        print (y.sensor,y.sensor_id,y.measurement_id)
-
+    def process_sm2(self,y,Raw_String,JDict):
         Sensor_Element = y.sensor +  '_' + y.measurement_id
 
-        # bottom contact CON sentence -- we dont have this
-#        if y.sensor =="CON":
-#            if y.measurement_val == '1':
-#                disp_text[y.sensor].Data_text[y.measurement_id].SetBackgroundColour('FOREST GREEN')
-#                disp_text[y.sensor].Data_text[y.measurement_id].SetValue("ON BTM")
-#            else:
-#                disp_text[y.sensor].Data_text[y.measurement_id].SetBackgroundColour('PINK')
-#                disp_text[y.sensor].Data_text[y.measurement_id].SetValue("OFF BTM")
-#        else:
-        if Sensor_Element in self.ScreenDict:
-                disp_text[Sensor_Element].update_values(y.measurement_val,y.status)
-
-
-
-#        JDict[z] = OrderedDict ([("SENSOR_ID",y.sensor_id),("measurement_id",y.measurement_id),("measurement_val",y.measurement_val),("QF",y.qf),("STATUS",y.status) ])
-
-
+#        print ("IN SM2 ",Sensor_Element,y.measurement_val,y.qf,y.status)
         JDict[Sensor_Element] = OrderedDict ([("measurement_val",y.measurement_val),("QF",y.qf),("STATUS",y.status) ])
         Raw_String[Sensor_Element] = y
 
-    def process_gll(self,x,disp_text,Raw_String,JDict):
-        t = u"\u00b0"
-        gps_lat_string = str(x.lat[:2] + "\xb0" + " "+'{:>6.6}'.format(x.lat[2:]) +"\' " +  x.lat_dir)
-        gps_lon_string  = str(x.lon[1:3] + "\xb0" + " "+'{:>6.6}'.format(x.lon[3:]) + "\' " + x.lon_dir)
-#        disp_text["GPS"].Data_text["LA"].SetValue(gps_lat_string)
-        Sensor_Element = "LAT"
-        disp_text[Sensor_Element].update_values(gps_lat_string, "X")
-        JDict[Sensor_Element] = str(x.lat[:2] +' '+ '{:>6.6}'.format(x.lat[2:])  +  x.lat_dir)
+    def process_gll(self,x,Raw_String,JDict):
 
-#        disp_text["GPS"].Data_text["LO"].SetValue(gps_lon_string)
-        Sensor_Element = "LON"
-        disp_text[Sensor_Element].update_values(gps_lon_string, "X")
-        JDict[Sensor_Element] = str(x.lon[1:3] + ' '+ '{:>6.6}'.format(x.lon[3:]) + x.lon_dir)
         Raw_String["GLL"] = x
 
-        Sensor_Element = "GLL_TS"
-        disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
+        lat = str(x.lat[:2] + ' ' + '{:>6.6}'.format(x.lat[2:]) + x.lat_dir)
+        JDict["LAT_DM"] = OrderedDict ([("measurement_val",lat),("QF",'-'),("STATUS",'-') ])
 
-        JDict["GPS_TIME"] = str(x.timestamp)
+        lon = str(x.lon[1:3] + ' ' + '{:>6.6}'.format(x.lon[3:]) + x.lon_dir)
+        JDict["LON_DM"] = OrderedDict ([("measurement_val",lon),("QF",'-'),("STATUS",'-') ])
 
-        JDict["Lat"]= '{:>7.6}'.format(x.latitude)
-        JDict["Long"] = '{:>7.6}'.format(x.longitude)
+        JDict["GPS_TIME"] = OrderedDict ([("measurement_val",(str(x.timestamp))),("QF",'-'),("STATUS",'-') ])
 
-    def process_vtg(self,x,disp_text,Raw_String,JDict):
-#        disp_text["GPS"].Data_text["H"].SetValue(str(x.true_track)+"\xb0")
-#        disp_text["GPS"].Data_text["SP"].SetValue(str(x.spd_over_grnd_kts))
+        # latitude and longitude are methods within the object for GLL that return decimal values
+        JDict["LAT_deci"]= OrderedDict ([("measurement_val",'{:>7.6}'.format(x.latitude)),("QF",'-'),("STATUS",'-')])
+
+        JDict["LON_deci"] = OrderedDict ([("measurement_val", '{:>7.6}'.format(x.longitude)),("QF",'-'),("STATUS",'-')])
+
+
+    def process_vtg(self,x,Raw_String,JDict):
+
         Raw_String["VTG"] = x
-#        JDict["VTG_TRACK"] = str(x.true_track)
-        Sensor_Element = "VTG_SPD"
-        disp_text[Sensor_Element].update_values(str(x.spd_over_grnd_kts), "X")
-#        JDict[Sensor_Element] = str(x.spd_over_grnd_kts)
-        JDict[Sensor_Element] = OrderedDict ([("measurement_val",str(x.spd_over_grnd_kts))])
+        JDict["VTG_SPD"] = OrderedDict ([("measurement_val",str(x.spd_over_grnd_kts)),("QF",'-'),("STATUS",'-') ])
+        JDict["VTG_COG"] = OrderedDict ([("measurement_val",str(x.true_track)),("QF",'-'),("STATUS",'-') ])
 
 
-        Sensor_Element = "VTG_COG"
-        disp_text[Sensor_Element].update_values(str(x.true_track)+"\xb0", "X")
-        JDict[Sensor_Element] = str(str(x.true_track))
+# not that the ZDA has been re-written by scanmar with what seems to be the units time-date stamp vs true GPS feed time
+# unfortunately the GLL which seems to have a true GPS time, does not have a date, so we have to use this data, which
+# is a bit tricky at mid night if we use the GLL time so really we should use the zda time date pair and hope that the
+# scanmar units clock is reasonably close to true gmt.
 
+    def process_zda(self,x,Raw_String,JDict):
 
-
-    def process_zda(self,x,disp_text,Raw_String,JDict):
-#        print "int process_zda"
-#        Current["ZDA"] = x
-#        disp_text["GPSZDA"].Data_text["ZDA_DATE"].SetValue(
-#            str(str(x.year).zfill(2) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(2)))
-#        disp_text["GPSZDA"].Data_text["ZDA_TS"].SetValue(str(x.timestamp))
         Raw_String["ZDA"] = x
-        Sensor_Element = "ZDA_TS"
-#        disp_text[Sensor_Element].update_values(str(x.timestamp), "X")
-        JDict["ZDA_DATETIME"] = str(x.year).zfill(2) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(
-            2) + ' ' + str(x.timestamp)
+        # just the scanmar time stamp
+        JDict["ZDA_TS"] = OrderedDict ([("measurement_val",str(x.timestamp)),("QF",'-'),("STATUS",'-')])
+        # full date time with zone info
+        dt = str(x.year).zfill(4) + '-' + str(x.month).zfill(2) + '-' + str(x.day).zfill(2) + 'T' + \
+                str(x.timestamp)+'-' + str(x.local_zone)+":"+str(x.local_zone_minutes)
 
+        JDict["ZDA_DATETIME"] = OrderedDict([("measurement_val", dt), ("QF", '-'), ("STATUS", '-')])
 
-    def process_dbs(self,x,disp_text,Raw_String,JDict):
-        Sensor_Element = "DBS"
-        disp_text[Sensor_Element].update_values(str(x.depth_meter), "X")
+    def process_dbs(self,x,Raw_String,JDict):
         Raw_String["DBS"] = x
-        JDict[Sensor_Element] = str(x.depth_meter)
+        JDict["DBS"] = OrderedDict([("measurement_val",str(x.depth_meter) ), ("QF", '-'), ("STATUS", '-')])
 
-
-    def process_wtp(self, x, disp_text, Raw_String, JDict):
-#        disp_text["WP"].Data_text["LEN"].SetValue(str(x.wiretension))
+    def process_wtp(self, x, Raw_String, JDict):
         Raw_String["WTP"] = x
-        JDict["WTP"] = str(x.wiretension)
+        JDict["WTP"] = OrderedDict([("measurement_val",str(x.wiretension) ), ("QF", '-'), ("STATUS", '-')])
 
-    def process_wlp(self, x, disp_text, Raw_String, JDict):
-#        disp_text["WP"].Data_text["LEN"].SetValue(str(x.wireout))
-#        disp_text["WP"].Data_text["SPD"].SetValue(str(x.wirespeed))
+    def process_wlp(self, x, Raw_String, JDict):
         Raw_String["WLP"] = x
-        JDict["WLPS"] = str(x.wirespeed)
-        JDict["WLPO"] = str(x.wireout)
+        JDict["WLPS"] = OrderedDict([("measurement_val",str(x.wirespeed) ), ("QF", '-'), ("STATUS", '-')])
+        JDict["WLPO"] = OrderedDict([("measurement_val",str(x.wireout) ), ("QF", '-'), ("STATUS", '-')])
 
-    def process_wls(self, x, disp_text, Raw_String, JDict):
-#        disp_text["WS"].Data_text["LEN"].SetValue(str(x.wireout))
-#        disp_text["WS"].Data_text["SPD"].SetValue(str(x.wirespeed))
+    def process_wls(self, x, Raw_String, JDict):
         Raw_String["WLS"] = x
-        JDict["WLSS"] = str(x.wirespeed)
-        JDict["WLSO"] = str(x.wireout)
+        JDict["WLSS"] = OrderedDict([("measurement_val",str(x.wirespeed)), ("QF", '-'), ("STATUS", '-')])
+        JDict["WLSO"] = OrderedDict([("measurement_val",str(x.wireout) ), ("QF", '-'), ("STATUS", '-')])
 
-    def process_wts(self, x, disp_text, Raw_String, JDict):
-#        disp_text["WS"].Data_text["LEN"].SetValue(str(x.wiretension))
+    def process_wts(self, x, Raw_String, JDict):
         Raw_String["WTS"] = x
-        JDict["WTS"] = str(x.wiretension)
+        JDict["WTS"] = OrderedDict([("measurement_val",str(x.wiretension) ), ("QF", '-'), ("STATUS", '-')])
 
-
-    def process_wst(self, x, disp_text, Raw_String, JDict):
-#        disp_text["WST"].Data_text["TEMP"].SetValue(str(x.wiretension))
+    def process_wst(self, x, Raw_String, JDict):
         Raw_String["WST"] = x
         JDict["WST"] = str(x.watertemp)
+        JDict["WST"] = OrderedDict([("measurement_val",str(x.watertemp) ), ("QF", '-'), ("STATUS", '-')])
     #################################################################################
     # Dictionaries to allow translation of sensor into the correct procedure to call
     # GroupDict are the highest level ones that come from the pymea2 Sentence_type ;
@@ -443,16 +402,16 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
        }
 
 # called from scanmarlogger3
-    def dispatch_message(self,sentence_type, line_x ,disp_text,Raw_String,JDict):
+    def dispatch_message(self,sentence_type, line_x ,Raw_String,JDict):
             if sentence_type in self.GroupDict:
 
                 if sentence_type == "SM2":
                     # process sm2 messages since they are in a nested dictionary withing the block
                     for z in line_x:
                         y = line_x[z]
-                        self.GroupDict[sentence_type](self,y,disp_text,Raw_String,JDict)
+                        self.GroupDict[sentence_type](self,y,Raw_String,JDict) # this is a function call
                 else:
-                    self.GroupDict[sentence_type](self,line_x,disp_text,Raw_String,JDict)
+                    self.GroupDict[sentence_type](self,line_x,Raw_String,JDict)
 
 #                current['OK'] = True
             else:
@@ -471,6 +430,8 @@ class SMN_TOOLS:  # these are the values are valid to place on the screen
                     elif msg.sensor == "DP":  # DP does not have an id field ; also map it to the DPTM sensors field
                         msg.sensor = "DPTM"
                         msg.measurement_id = "D"
+                    elif msg.sensor == "TEY":  # MAP Trawl Eye to Trawler sounder field ; has same elements
+                        msg.sensor = "TS"
                     elif msg.sensor == "DST":  # DST legacy on chan 3(wing) or 4(door) does not have an id field; map to cvtlam dvtlam
                         if msg.sensor_id == '3':
                             msg.sensor = "CVTLAM"

@@ -52,7 +52,7 @@ ID_START_ARC = wx.NewId()
 ID_STOP_ARC = wx.NewId()
 ID_SER_CONF = wx.NewId()
 
-VERSION = "V3.01 March 7 2019"
+VERSION = "V3.02 March 12 2019"
 TITLE = "ScanMar_Logger3"
 
 
@@ -456,7 +456,7 @@ class GraphFrame(wx.Frame):
         style = wx.TE_MULTILINE | wx.TE_READONLY | wx.SUNKEN_BORDER | wx.VSCROLL
 
         label = wx.StaticText(apanel,
-                label="STATION            DATE      TIME     | EVENT       BTM-D   TRL_D    LATITUDE    LONGITUDE INFO")
+                label="STATION            DATE       TIME         EVENT       BTM-D   TRL_D   LATITUDE   LONGITUDE  INFO")
 
         # SCREEN_LOG WILL BE UPDATED DURING RUN
         self.screen_log = wx.TextCtrl(apanel, wx.ID_ANY, size=(x, y), style=style)
@@ -673,7 +673,7 @@ class GraphFrame(wx.Frame):
         self.TSPbox = wx.StaticBoxSizer(TSPbx, wx.VERTICAL)
         self.TSPbox.Add(hbox[3], 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
-        TSbx = wx.StaticBox(apanel,-1,"Trawl Sounder")
+        TSbx = wx.StaticBox(apanel,-1,"Trawl Sounder/ Trawl Eye")
         self.TSbox = wx.StaticBoxSizer(TSbx, wx.VERTICAL)
         self.TSbox.Add(hbox[4], 0, flag=wx.ALIGN_LEFT | wx.TOP)
 
@@ -1081,6 +1081,8 @@ class GraphFrame(wx.Frame):
 #                    print ("calling display "+self.data.JDict["LAT_DM"]["measurement_val"])
                 else:
                     pass
+
+
             self.display_values()
         else:
             if block["REASON"] == "FINISHED":
@@ -1094,7 +1096,8 @@ class GraphFrame(wx.Frame):
     # This is the elapsed time since the start of monitoring the bottom section
         if self.status.OnBottom:
             if self.status.StartTime == 0:
-                self.status.StartTime = datetime.now()
+#                self.status.StartTime = datetime.now()
+                self.status.StartTime = datetime.strptime(self.data.JDict["GPS_TIME"]['measurement_val'],'%H:%M:%S')
                 self.slat = float(self.data.JDict["LAT_deci"]['measurement_val'])   # for the distance calcualtion
                 self.slon = float(self.data.JDict["LON_deci"]['measurement_val'])
                 et = 0
@@ -1102,7 +1105,7 @@ class GraphFrame(wx.Frame):
                 self.data.dist  = 0.0
                 self.data.elapsed = ""
             else:
-                Et = datetime.now() - self.status.StartTime
+                Et = datetime.strptime(self.data.JDict["GPS_TIME"]["measurement_val"],'%H:%M:%S') - self.status.StartTime
                 self.data.elapsed = str(timedelta(seconds=Et.seconds))
                 et = timedelta(seconds=Et.seconds).total_seconds()/60.0
 #                self.data.JDict["ET"] = OrderedDict([("measurement_val", et), ("QF",'-'), ("STATUS",'-')])
@@ -1117,18 +1120,11 @@ class GraphFrame(wx.Frame):
 
 # update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
             try:
-#                self.data.pdata[self.data.x_axis["CHANNEL"]].append( float(self.data.JDict["ET_BTM"]['measurement_val']))
                 self.data.pdata[self.data.x_axis["CHANNEL"]].append(et)
                 self.data.pdata[self.data.host_axis["CHANNEL"]].append(-1. * float(self.data.JDict[self.data.host_axis["CHANNEL"]]["measurement_val"]))
                 for i in range (1,6,1):
                     self.data.pdata[self.data.p_axis[i]["CHANNEL"]].append(float(self.data.JDict[self.data.p_axis[i]["CHANNEL"]]["measurement_val"]))
 
-#                self.data.pdata["TS_O"].append(float(self.data.JDict["TS_O"]["measurement_val"])) # trawl opening
-#                self.data.pdata["TS_C"].append(float(self.data.JDict["TS_C"]["measurement_val"])) # trawl clearance
-#                self.data.pdata["DVTLAM_S"].append(float(self.data.JDict["DVTLAM_S"]["measurement_val"])) # door spead
-#                self.data.pdata["CVTLAM_S"].append(float(self.data.JDict["CVTLAM_S"]["measurement_val"])) # wing stread
-#                self.data.pdata["VTG_SPD"].append(float(self.data.JDict["VTG_SPD"])) # wing stread
-#                self.data.pdata["ET"].append(float(self.data.JDict["ET"]))
             except:
                 print ("plot exception")
                 return

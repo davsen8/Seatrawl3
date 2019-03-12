@@ -70,7 +70,9 @@ class DataVars(object):
         self.WarpOut = '0'
         self.dist = 0.0
         self.elapsed = ""
-        self.dist = 0.0
+        self.elapsed_doors =None
+        self.DoorsInSTime =None
+        self.OnBottomSTime=None
 
         self.RAWFileName = None
         self.JSONFileName = None
@@ -94,7 +96,6 @@ class DataVars(object):
         self.JDict["DIST"] = ""
         self.JDict["GPS_TIME"] = ""
         self.JDict["ZDA_TS"] = ""
-        self.JDict["ZDA_DATETIME"] = ""
         self.JDict["LAT_DM"] = ""
         self.JDict["LON_DM"] = ""
         self.JDict["LAT_deci"] = ""
@@ -132,13 +133,13 @@ class DataVars(object):
         self.JDict['DPTM_D'] = ""   # Mapped DT to this one in the nmea parser for simplicity
         self.JDict['DPTM_T'] = ""   # BIO has this one
 
-        self.JDict['WLPS'] = ""
-        self.JDict['WLPO'] = ""
-        self.JDict['WLSS'] = ""
-        self.JDict['WLSO'] = ""
-        self.JDict['WTP'] = ""
-        self.JDict['WTS'] = ""
-        self.JDict['WST'] = ""
+#        self.JDict['WLPS'] = ""    # not currently installed
+#        self.JDict['WLPO'] = ""
+#        self.JDict['WLSS'] = ""
+#        self.JDict['WLSO'] = ""
+#        self.JDict['WTP'] = ""
+#        self.JDict['WTS'] = ""
+#        self.JDict['WST'] = ""
         for x in self.JDict:
                 self.JDict[x] = OrderedDict ([("measurement_val",'-'),("QF",'-'),("STATUS",'-') ])
 
@@ -243,9 +244,9 @@ class DataVars(object):
     def mark_event(self, flag):
 
             #        dttm = str(datetime.now())
-            dt = time.strftime('%Y-%m-%dT%H:%M:%S')
+            dt = time.strftime('%Y-%m-%dT%H:%M:%S') # PC CLOCK
 
-            #        if self.LoggerRun:
+            #  ZDA_DATEIME IS SCANMAR CLOCK ; which 'should' be on GMT
             if self.JDict["DPTM_D"]["measurement_val"] != '-':
                 msg = self.basename + ", " + self.JDict["ZDA_DATETIME"]["measurement_val"] + ", " + "{:<10}".format(flag)\
                       + ", " + self.JDict["DBS"]["measurement_val"]+ ", " + self.JDict["DPTM_D"]["measurement_val"] + \
@@ -257,7 +258,7 @@ class DataVars(object):
                       "NULL" + ",  " + self.JDict["LAT_DM"]["measurement_val"] + ", " + self.JDict["LON_DM"]["measurement_val"]
 
             if flag == "WARPENTER":
-                msg = msg + ', WARP=' + self.WarpOut + ' m'
+                msg = msg + ', WARP=' + self.WarpOut + 'm'
 
             screen_msg = msg
 #            self.screen_log.AppendText('\n' + msg)
@@ -268,13 +269,16 @@ class DataVars(object):
             log_msg = dt + ", " + msg
             self.write_MissionLog(log_msg)
 
-            if flag == "OUTWATER":
+            if flag == "OUTWATER":  # need to do the OUTWATER message and  a TOWINFO message together
                 msg = msg + ',' + self.elapsed + ',' + '{:>7.3}'.format(self.dist)
 
                 msg = self.basename + ", " + self.JDict["ZDA_DATETIME"]["measurement_val"] + ", " +\
                                 "{:<10}".format("TOWINFO") + ", DURATION= " + \
-                      self.elapsed + ', DISTANCE= ' + '{:>7.3}'.format(self.dist) + ' Nm, WARP= ' + self.WarpOut +' m'
-                self.parent.screen_log.AppendText('\n' + msg)
+                      self.elapsed + ', DISTANCE= ' + '{:>7.3}'.format(self.dist) + ' Nm, WARP=' + self.WarpOut +'m'
+
+#                self.parent.screen_log.AppendText('\n' + msg)
+
+                screen_msg = screen_msg +'\n'+ msg
                 log_msg = dt + ", " + msg
                 if self.status.RT_source:  # dont write to files if in archive playback mode
                     self.write_MissionLog(log_msg)
@@ -343,13 +347,28 @@ class DataVars(object):
                 self.CSV_fp= open(self.CSVFileName,"ab",0)
 
                 for ele, val in JDict.items():
-                    if ele == "ZDA_DATETIME":
-                        self.CSV_fp.write(str('{:>10}'.format('DATE') +','+ '{:>10}'.format('TIME')+',',).encode() )
+                    if ele in[
+#                        "ZDA_DATETIME",
+                        "ET_BTM",
+                        "DIST",
+#                        "GPS_TIME",
+#                        "ZDA_TS",
+#                        "LAT_DM" ,
+#                        "LON_DM",
+                        "LAT_deci",
+                        "LON_deci",
+                        "VTG_SPD",
+                        "VTG_COG",
+                        "DBS"] :
+                            self.CSV_fp.write(str('{:>10}'.format(ele) + ',',).encode() )
+                    elif ele in ["ZDA_DATETIME"] :
+                            self.CSV_fp.write(str('{:>10}'.format('DATE') +','+ '{:>10}'.format('TIME')+',  ',).encode() )
                     elif ele == "LAT_DM" or ele == "LON_DM" :
-                        self.CSV_fp.write(str('{:>10}'.format(ele+'_D')+','+'{:>10}'.format(ele+'_M')+',',).encode() )
-                    else:
-                        self.CSV_fp.write(str('{:>10}'.format(ele) + ',',).encode())
-                    if isinstance(val, dict):
+                            self.CSV_fp.write(str('{:>10}'.format(ele+'_D')+','+'{:>10}'.format(ele+'_M')+',',).encode() )
+#                    else:
+#                        self.CSV_fp.write(str('{:>10}'.format(ele) + ',',).encode())
+                    elif ele not in ["GPS_TIME", "ZDA_TS"]:
+                            self.CSV_fp.write(str('{:>10}'.format(ele) + ',', ).encode() )
                             self.CSV_fp.write(str('{:>10}'.format('QF') +','+ '{:>10}'.format('VA')+',',).encode() )
 
 #                self.CSVwriter = csv.writer(self.CSV_fp)
@@ -357,19 +376,35 @@ class DataVars(object):
                     flag = '{:>10}'.format("OnBottom")
             else:
                 for ele, val in JDict.items():
- #                   if isinstance(val, dict):
-                    if ele not in ["ZDA_DATATIME","LAT_DM","LON_DM"] :
-                        for k, v in val.items():
-                            self.CSV_fp.write(str('{:>10}'.format(v) + ',',).encode() )
-                    else:
-                        if ele == "ZDA_DATETIME":
+                        if ele in ["ZDA_DATETIME",
+                                   "ZDA_DATETIME",
+                                   "ET_BTM",
+                                   "DIST",
+                                   #                        "GPS_TIME",
+                                   #                        "ZDA_TS",
+                                   #                        "ZDA_DATETIME",
+                                   #                        "LAT_DM" ,
+                                   #                        "LON_DM",
+                                   "LAT_deci",
+                                   "LON_deci",
+                                   "VTG_SPD",
+                                   "VTG_COG",
+                                   "DBS"]:
+                            self.CSV_fp.write(str('{:>10}'.format(val['measurement_val']) + ',', ).encode())
+                        elif ele in ["ZDA_DATETIME"]:
                             DT = val["measurement_val"].split()
-                            self.CSV_fp.write(str('{:>10}'.format(DT[0])+','+ '{:>10}'.format(DT[1])+',',).encode() )
-                        elif  ele == "LAT_DM"  or  ele == "LON_DM":
-                                L = val["measurement_val"].split()
-                                self.CSV_fp.write(str('{:>10}'.format(L[0]) + ',' + '{:>10}'.format(L[1]) + ',',).encode() )
-                        else:
-                            self.CSV_fp.write(str('{:>10}'.format(val["measurement_val"]) + ',',).encode() )
+                            self.CSV_fp.write(
+                                str('{:>10}'.format(DT[0]) + ',' + '{:>10}'.format(DT[1]) + ',', ).encode())
+
+                        elif ele == "LAT_DM" or ele == "LON_DM":
+                            L = val["measurement_val"].split()
+                            self.CSV_fp.write(str('{:>10}'.format(L[0]) + ',' + '{:>10}'.format(L[1]) + ',', ).encode())
+
+                        elif ele not in ["GPS_TIME","ZDA_TS"]:
+                            for k, v in val.items():
+                                self.CSV_fp.write(str('{:>10}'.format(v) + ',', ).encode())
+
+
                 flag = '{:>10}'.format('B') if self.status.OnBottom else '{:>10}'.format('W')
 
             self.CSV_fp.write(str(flag+'\n').encode())
@@ -391,7 +426,7 @@ class DataVars(object):
             if os.path.isfile(self.MISIONFileName):
                 self.TripLog_fp = open(self.MISIONFileName, "a")
             else:
-                msg = "PC CLOCK           , SHIPTRIPSET    ,   FEED ClOCK,       EVENT     , ShipSND, NetSND,   LAT    ,    LONG,     INFO"
+                msg = "PC CLOCK           , SHIPTRIPSET    ,   SCANMAR ClOCK,       EVENT     , ShipSND, NetSND,   LAT    ,    LONG,     INFO"
 
                 self.TripLog_fp = open(self.MISIONFileName, "w")
                 self.TripLog_fp.write(msg + '\n')
