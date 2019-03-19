@@ -860,7 +860,7 @@ class GraphFrame(wx.Frame):
         ymax = ymin - 20
 #        print (ym,ymin, ymax)
         self.host.set_ybound(lower=ymin, upper=ymax)
-
+#        self.host.set_xbound(lower=ymin, upper=ymax)
 
 
         self.axis_plot[0].set_xdata(np.array(self.data.pdata[self.data.x_axis["CHANNEL"]]))
@@ -1131,6 +1131,7 @@ class GraphFrame(wx.Frame):
 
 
 # update the plot when on bottom (for now .. have an ET issue- need another ET for full tow)
+            # bad data can cause issues here and break the plot ,, needs better error control and recovery
             try:
                 self.data.pdata[self.data.x_axis["CHANNEL"]].append(et)
                 self.data.pdata[self.data.host_axis["CHANNEL"]].append(-1. * float(self.data.JDict[self.data.host_axis["CHANNEL"]]["measurement_val"]))
@@ -1138,7 +1139,7 @@ class GraphFrame(wx.Frame):
                     self.data.pdata[self.data.p_axis[i]["CHANNEL"]].append(float(self.data.JDict[self.data.p_axis[i]["CHANNEL"]]["measurement_val"]))
 
             except:
-                print ("plot exception")
+#                print ("plot exception")
                 return
 
             self.draw_plot()
@@ -1306,6 +1307,7 @@ class GraphFrame(wx.Frame):
         menubar.Enable(ID_SER_CONF, True)
 
         self.status.MonitorRun = False
+        self.status.OnBottom = False
 
     def setup_new_tow(self):
         if self.status.RT_source:
