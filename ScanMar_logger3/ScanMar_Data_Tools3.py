@@ -317,7 +317,8 @@ class DataVars(object):
 
     def get_file_dialog(self):
         filename = None
-        dialog = wx.FileDialog(None, "Choose File.", os.getcwd(), "", "ScanMar Raw Log|*.pnmea|All Files|*",
+#        cwd = os.getcwd()
+        dialog = wx.FileDialog(None, "Choose File.",self.dataDir , "", "ScanMar Raw Log|*.pnmea|All Files|*",
                             wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
         if dialog.ShowModal() == wx.ID_OK:
             filename = dialog.GetPath()

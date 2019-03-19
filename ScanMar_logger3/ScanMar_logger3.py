@@ -52,7 +52,7 @@ ID_START_ARC = wx.NewId()
 ID_STOP_ARC = wx.NewId()
 ID_SER_CONF = wx.NewId()
 
-VERSION = "V3.02 March 12 2019"
+VERSION = "V3.03 March 19 2019"
 TITLE = "ScanMar_Logger3"
 
 
@@ -753,6 +753,7 @@ class GraphFrame(wx.Frame):
 #        if self.xmax_control.is_auto():
         self.set_plot_title()
 
+# not used actually
         xmax = self.data.pdata["ET_BTM"][len(self.data.pdata["ET_BTM"])-1] if self.data.pdata["ET_BTM"][len(self.data.pdata["ET_BTM"])-1] > 1800 else 1800
 #        else:
 #            xmax = int(self.xmax_control.manual_value())
@@ -849,6 +850,17 @@ class GraphFrame(wx.Frame):
 #        if (self.GraphRun):
 #        if (True):
             #            self.plot_Pres.set_xdata(np.arange(len(self.data["Pres"])))
+
+# host axis is by default set to the net depth channel
+# remeber we are working in negatives for depth
+        ym = min(self.data.pdata[self.data.host_axis["CHANNEL"]])
+
+        ymin = int(ym/10)*10 + 10
+
+        ymax = ymin - 20
+#        print (ym,ymin, ymax)
+        self.host.set_ybound(lower=ymin, upper=ymax)
+
 
 
         self.axis_plot[0].set_xdata(np.array(self.data.pdata[self.data.x_axis["CHANNEL"]]))
